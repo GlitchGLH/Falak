@@ -1,0 +1,113 @@
+# Falak
+
+Designed and directed by UncleGlitch, built with AI assistance.
+
+**Falak** is a file conversion wheel. Drag a file (or several), press **Shift**
+while dragging, and drop it on the format you want — a new file is saved next
+to the original, which is never changed.
+
+By UncleGlitch (GitHub: @GlitchGLH)
+
+[Download the latest release](https://github.com/GlitchGLH/Falak/releases/latest)
+
+![The wheel in the light and dark themes](docs/wheel-light-dark.png)
+
+![The tray menu](docs/tray-menu.png)
+
+![The Compress dialog](docs/compress-dialog.png)
+
+## Supported formats
+
+
+| Category | Formats |
+|---|---|
+| Images | JPG, PNG, WEBP, AVIF, HEIC, TIFF, BMP, GIF, ICO, SVG, camera RAW |
+| PDF | PDF |
+| Word / Excel / PowerPoint | with Microsoft Office or LibreOffice |
+| Video | MP4, MOV, MKV, WEBM, AVI, WMV, GIF |
+| Audio | MP3, M4A, WAV, FLAC, OGG, OPUS, WMA, AIFF |
+| Subtitles | SRT, VTT, ASS, SSA |
+| Text files | TXT to PDF, DOCX, RTF, HTML, JPG, PNG, SRT, VTT |
+| Archives | ZIP, 7Z, RAR, TAR, GZIP |
+
+## Install
+
+1. Download `FalakSetup-1.0.0.exe` from the
+   [releases page](https://github.com/GlitchGLH/Falak/releases/latest).
+2. Run it — no administrator rights needed; Falak installs for your user only
+   (`%LOCALAPPDATA%\Programs\Falak`).
+3. The Falak icon appears next to the clock. Drag a file and press Shift.
+
+A portable version that needs no installation is attached to the release too.
+
+## SmartScreen
+
+The first run may show a Windows SmartScreen warning because the installer is
+not digitally signed (a code-signing certificate costs money every year).
+Click **More info**, then **Run anyway**. Everything Falak does happens on
+your computer — see Privacy below.
+
+## Uninstall
+
+Windows Settings → Apps → Falak → Uninstall (or `Uninstall.exe` in the install
+folder). You are asked whether to delete your settings too; by default they
+are kept. The uninstaller removes the program, the shortcuts, the startup
+entry, the helper's scheduled task, the log folder and the downloaded engines.
+
+## Privacy
+
+Everything happens on your computer. The only network access is the one-time
+download of the free conversion engines when you first use a format that
+needs one: FFmpeg, PDFium, qpdf and resvg, downloaded from their GitHub
+release pages. No telemetry, no analytics, no uploads.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+## فلك بالعربية
+
+صمّمه وأشرف عليه UncleGlitch، وبُني بمساعدة الذكاء الاصطناعي.
+
+**فلك** عجلة تحويل الملفات: اسحب ملفًا أو عدة ملفات، اضغط **Shift** أثناء
+السحب، ثم أفلت على الصيغة التي تريدها — تُحفظ نسخة جديدة بجانب الملف الأصلي
+ولا يتغير الأصل.
+
+By UncleGlitch (GitHub: @GlitchGLH)
+
+[تحميل أحدث إصدار](https://github.com/GlitchGLH/Falak/releases/latest)
+
+### التثبيت
+
+1. نزّل `FalakSetup-1.0.0.exe` من صفحة الإصدارات.
+2. شغّله — لا يحتاج صلاحيات المسؤول، ويُثبَّت لحسابك فقط
+   (`%LOCALAPPDATA%\Programs\Falak`).
+3. يظهر رمز «فلك» بجوار الساعة. اسحب ملفًا واضغط Shift.
+
+توجد أيضًا نسخة محمولة لا تحتاج تثبيتًا مرفقة بالإصدار.
+
+### SmartScreen
+
+قد يعرض ويندوز تحذير SmartScreen عند أول تشغيل لأن المثبِّت غير موقَّع رقميًا
+(شهادة التوقيع الرقمي مدفوعة سنويًا). اضغط **More info** ثم **Run anyway**.
+كل ما يفعله فلك يجري على جهازك — انظر «الخصوصية» أدناه.
+
+### إلغاء التثبيت
+
+إعدادات ويندوز ← التطبيقات ← Falak ← إلغاء التثبيت (أو `Uninstall.exe` في
+مجلد البرنامج). سيسألك إن كنت تريد حذف إعداداتك أيضًا، والافتراضي
+الاحتفاظ بها. يزيل إلغاء التثبيت البرنامج والاختصارات ومدخل بدء التشغيل ومهمة المساعد
+المجدولة ومجلد السجل والمحركات المنزَّلة.
+
+### الخصوصية
+
+كل شيء يجري على جهازك. الاتصال بالإنترنت الوحيد هو تنزيل محركات التحويل
+المجانية مرة واحدة عند أول استخدام للصيغ التي تحتاجها: FFmpeg وPDFium
+وqpdf وresvg، من صفحات إصداراتها على GitHub. لا تتبّع ولا تحليلات ولا رفع
+أي بيانات.
+
+### الترخيص
+
+MIT — انظر [LICENSE](LICENSE).
