@@ -1,0 +1,9 @@
+# Go
+*.test
+*.out
+
+# Windows build output
+*.exe
+
+# Dependencies kept next to the module root (see BUILDING.md)
+deps/
