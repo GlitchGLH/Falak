@@ -1,0 +1,24 @@
+1 ICON "raha.ico"
+1 24 "raha.manifest"
+1 VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "UncleGlitch"
+      VALUE "FileDescription", "Falak"
+      VALUE "LegalCopyright", "(c) 2026 UncleGlitch"
+      VALUE "FileVersion", "1.0.0.0"
+      VALUE "ProductName", "Falak"
+      VALUE "ProductVersion", "1.0.0.0"
+      VALUE "OriginalFilename", "Falak.exe"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200
+  END
+END
