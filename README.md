@@ -10,11 +10,35 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 [Download the latest release](https://github.com/GlitchGLH/Falak/releases/latest)
 
-![The wheel in the light and dark themes](docs/wheel-light-dark.png)
+<p>
+  <img src="docs/wheel-light.png" width="49%" alt="The wheel, light theme">
+  <img src="docs/wheel-dark.png" width="49%" alt="The wheel, dark theme">
+</p>
 
-![The tray menu](docs/tray-menu.png)
+<p>
+  <img src="docs/tools-wheel-light.png" width="49%" alt="The tools wheel, light theme">
+  <img src="docs/tools-wheel-dark.png" width="49%" alt="The tools wheel, dark theme">
+</p>
 
-![The Compress dialog](docs/compress-dialog.png)
+<p>
+  <img src="docs/tray-menu-en-light.png" width="49%" alt="The tray menu in English, light theme">
+  <img src="docs/tray-menu-en-dark.png" width="49%" alt="The tray menu in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/compress-dialog-en-light.png" width="49%" alt="The Compress dialog in English, light theme">
+  <img src="docs/compress-dialog-en-dark.png" width="49%" alt="The Compress dialog in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/progress-en-light.png" width="49%" alt="The progress window in English, light theme">
+  <img src="docs/progress-en-dark.png" width="49%" alt="The progress window in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/how-to-use-en-light.png" width="49%" alt="The How to use card in English, light theme">
+  <img src="docs/how-to-use-en-dark.png" width="49%" alt="The How to use card in English, dark theme">
+</p>
 
 ## Supported formats
 
@@ -91,6 +115,36 @@ MIT — see [LICENSE](LICENSE).
 By UncleGlitch (GitHub: @GlitchGLH)
 
 [تحميل أحدث إصدار](https://github.com/GlitchGLH/Falak/releases/latest)
+
+<p>
+  <img src="docs/wheel-light.png" width="49%" alt="The wheel, light theme">
+  <img src="docs/wheel-dark.png" width="49%" alt="The wheel, dark theme">
+</p>
+
+<p>
+  <img src="docs/tools-wheel-light.png" width="49%" alt="The tools wheel, light theme">
+  <img src="docs/tools-wheel-dark.png" width="49%" alt="The tools wheel, dark theme">
+</p>
+
+<p>
+  <img src="docs/tray-menu-ar-light.png" width="49%" alt="The tray menu in Arabic, light theme">
+  <img src="docs/tray-menu-ar-dark.png" width="49%" alt="The tray menu in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/compress-dialog-ar-light.png" width="49%" alt="The Compress dialog in Arabic, light theme">
+  <img src="docs/compress-dialog-ar-dark.png" width="49%" alt="The Compress dialog in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/progress-ar-light.png" width="49%" alt="The progress window in Arabic, light theme">
+  <img src="docs/progress-ar-dark.png" width="49%" alt="The progress window in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/how-to-use-ar-light.png" width="49%" alt="The How to use card in Arabic, light theme">
+  <img src="docs/how-to-use-ar-dark.png" width="49%" alt="The How to use card in Arabic, dark theme">
+</p>
 
 ### التثبيت
 

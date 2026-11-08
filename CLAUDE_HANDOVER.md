@@ -203,6 +203,12 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   matches the drawn button. Other `Clip()` uses checked: `ui/panel.go` already calls
   `ResetClip()` after `Pop()`, `ui/wheel.go` resets the clip without `Push`/`Pop`; the
   `Push`/`Pop` in `ui/icons.go` and `ui/menu.go` have no clip.
+- Progress window mirrors in Arabic (`88a8c4a`); Arabic shaping keeps non-joining letters
+  (a hamza U+0621 after a joining letter became a NUL, `55e1923`); help card drops the duplicate title line
+  (`2668505`); tanween kasra (U+064D) removed from all Arabic text (`a2c793c`, owner-approved).
+- README screenshots (commit "README screenshots"): 20 PNGs in `docs/` (see Section 7), shown
+  in both README sections with English alt text; old `docs/tray-menu.png` and
+  `docs/compress-dialog.png` removed.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
@@ -211,12 +217,10 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   the final build).
 
 ### NEXT (in this order)
-1. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
-   owner's approval.
-2. Final build. No more builds after that.
-3. New VirusTotal scan and new Microsoft false-positive report on the final
+1. Final build. No more builds after that.
+2. New VirusTotal scan and new Microsoft false-positive report on the final
    `FalakSetup-1.0.0.exe`.
-4. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
+3. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
    see Q1 below for how).
 
 ### Rejected by the owner (do not implement)
@@ -279,8 +283,7 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   source). Output `$SHOTS_OUT` (default `C:\Projects\falak-shots`), 200 % scale, sample
   `Holiday.mp4` / 48.3 MB:
   `go test -tags "shots wasm2go nodynamic" -run TestShots -count=1 .`
-  (As of the OK button commit the file is local and not committed yet; the owner decides in
-  screenshot stage 2.)
+  The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
 - Python edits through a bash heredoc mangled escapes: `\n\n` became real line breaks inside a
@@ -464,7 +467,8 @@ find `${__FILEDIR__}/...` files.
 **`res/`** (**FROZEN sounds** `hover.wav`/`appear.wav`/`drop.wav`; `raha.ico`, `raha.rc`,
 `raha.manifest`, `icon-1024.png`).
 
-**`docs/`**: `wheel-light-dark.png`, `tray-menu.png`, `compress-dialog.png` — see Section 6.
+**`docs/`**: the README screenshots (Section 7) and the older `wheel-light-dark.png` (no longer
+used by the README).
 
 ## 3. Build environment (exact) and commands
 
@@ -605,14 +609,15 @@ Decisions from the 2026-11-08 review session (this repository's history):
 - **Vendored dependencies** (`af994d0`), see Section 3.
 
 ## 7. Screenshots and docs images
-The README images (`docs/wheel-light-dark.png`, `docs/tray-menu.png`, `docs/compress-dialog.png`)
-were **rendered headlessly in the sandbox** — no Windows UI. Because the sandbox has **no
-Arabic fonts with shaping**, any Arabic text in those renders shows as "..." — **the app itself
-is fine on Windows**. The **owner has replaced `docs/tray-menu.png` and
-`docs/compress-dialog.png` on GitHub with real Windows screenshots** — the local copies are
-outdated; do not regenerate or re-push them from the sandbox.
+Since 2026-11-09 the README shows 20 PNGs in `docs/`, rendered off-screen on Windows with the
+app's own drawing code and fonts (renderer and command: Section "Current state", Environment):
+`wheel-light/dark`, `tools-wheel-light/dark` (shared by both languages: the wheel has no
+translated text), and `tray-menu-`, `compress-dialog-`, `progress-`, `how-to-use-` each as
+`-en-light`, `-en-dark`, `-ar-light`, `-ar-dark`. 200 % scale, sample `Holiday.mp4` / 48.3 MB,
+about 3.2 MB in total. The older `docs/tray-menu.png` and `docs/compress-dialog.png` were
+removed (on GitHub they are the owner's real screenshots; publishing replaces them).
 
-`docs/wheel-light-dark.png` reproduction: `cmd/themeprev` renders four wheel sets
+Older notes: `docs/wheel-light-dark.png` reproduction: `cmd/themeprev` renders four wheel sets
 (`ToolItems("a.mp4")`, `ToolItems("a.png")`, `FormatItems("a.mp4")`, `ToolItems("a.wav")`)
 in two rows (light row then dark row) onto a sheet of `n=540` px cells (`sheet =
 540×len(sets)` wide, 1080 tall), each cell over a synthetic gradient background — light
@@ -630,8 +635,7 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 - New builds of Falak.exe / FalakSetup-1.0.0.exe exist only in `build/` (not published; their
   hashes differ from the ones under review). Manual testing on real Windows is pending.
 - **GitHub repo github.com/GlitchGLH/Falak is public (MIT, author UncleGlitch).**
-  The owner replaced `docs/tray-menu.png` and `docs/compress-dialog.png` with real screenshots
-  on GitHub; **local copies are outdated** (leave them alone).
+  (2026-11-09: the README now uses the new screenshots in `docs/`, see Section 7.)
 - **Release v1.0.0 is NOT published yet** (everything is prepared: two upload batches).
 - **Microsoft submission `b8db366f-2c5d-4fba-ad8e-c4455e28841c`** (Wacatac.B!ml false
   positive) is **pending** on the files in `Falak-1.0.0-release` → never touch that folder.
