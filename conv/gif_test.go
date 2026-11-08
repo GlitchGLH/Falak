@@ -42,7 +42,7 @@ func TestGifRefusesLongVideos(t *testing.T) {
 // TestGifProgressMoves: on a short clip the bar must move through BOTH
 // passes (no stuck 0%) and finish.
 func TestGifProgressMoves(t *testing.T) {
-	clip := makeClip(t, 4)
+	clip := makeClip(t, 9) // long enough (under the 10 s cap) for progress to tick on fast machines
 	var vals []float64
 	out, err := Run(context.Background(), clip, "to:GIF", func(f float64) { vals = append(vals, f) })
 	if err != nil {
