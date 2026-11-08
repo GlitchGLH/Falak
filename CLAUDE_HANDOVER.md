@@ -351,7 +351,7 @@ repo **github.com/GlitchGLH/Falak** (public).
   original; Start activates only for `0 < MB` and `MB×1e6 < OriginalBytes`).
 - **How-to-use card**: an in-app help card in the app's own style (no browser).
 - **GIF limit**: animated-GIF output refuses videos longer than 10 s
-  («صيغة GIF تدعم الفيديو حتى 10 ثوانٍ فقط») and reports two-pass progress (0 → 0.4 palette pass → 1.0).
+  («صيغة GIF تدعم الفيديو حتى 10 ثوان فقط») and reports two-pass progress (0 → 0.4 palette pass → 1.0).
 - **Key-reading helper**: opt-in elevated helper so key state can be read while an elevated
   window has focus. It starts through a **UAC prompt every time** (`ShellExecute "runas"`);
   the old scheduled task `Falak\KeysHelper` (silent elevation of a user-writable exe) is gone
@@ -386,9 +386,9 @@ Hovering a tool segment switches the whole wheel to the tools set (Alt/Ctrl/Tab 
 
 Other exact Arabic strings you may need (from source):
 - Compress hint: «اكتب حجمًا أصغر من حجم الملف الأصلي»
-- GIF refusal: «صيغة GIF تدعم الفيديو حتى 10 ثوانٍ فقط»
+- GIF refusal: «صيغة GIF تدعم الفيديو حتى 10 ثوان فقط»
 - T('Falak is running', 'فلك يعمل الآن') · T('Drag a file and press Shift while dragging.', 'اسحب ملفًا واضغط Shift أثناء السحب.')
-- T('Conversion failed', 'تعذّر التحويل') · T('Done', 'اكتمل التحويل') · T('Compressing', 'جارٍ الضغط')
+- T('Conversion failed', 'تعذّر التحويل') · T('Done', 'اكتمل التحويل') · T('Compressing', 'جار الضغط')
 - T('Still converting in the background', 'يستمر التحويل في الخلفية')
 - T("You'll get a notification when it's done. Follow the progress on the Falak icon next to the clock.", 'سيظهر إشعار عند الانتهاء. تابع التقدّم من أيقونة فلك بجانب الساعة.')
 - T("This option doesn't apply to the selected files", 'هذا الخيار لا ينطبق على الملفات المحددة')

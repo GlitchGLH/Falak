@@ -1374,7 +1374,7 @@ func countConvertible(paths []string) int {
 // jobTitle is the panel's top line: "Converting to MP3", or the tool's action.
 func jobTitle(id, label string) string {
 	if strings.HasPrefix(id, "to:") {
-		return fmt.Sprintf(T("Converting to %s", "جارٍ التحويل إلى %s"), label)
+		return fmt.Sprintf(T("Converting to %s", "جار التحويل إلى %s"), label)
 	}
 	tool := id
 	if k := strings.IndexByte(id, ':'); k >= 0 {
@@ -1382,35 +1382,35 @@ func jobTitle(id, label string) string {
 	}
 	switch tool {
 	case "compress":
-		return T("Compressing", "جارٍ الضغط")
+		return T("Compressing", "جار الضغط")
 	case "metadata":
-		return T("Removing metadata", "جارٍ إزالة البيانات الوصفية")
+		return T("Removing metadata", "جار إزالة البيانات الوصفية")
 	case "rotate":
-		return T("Rotating", "جارٍ التدوير")
+		return T("Rotating", "جار التدوير")
 	case "resize":
-		return T("Resizing to 50%", "جارٍ التصغير إلى 50%")
+		return T("Resizing to 50%", "جار التصغير إلى 50%")
 	case "addbg":
-		return T("Adding a white background", "جارٍ إضافة خلفية بيضاء")
+		return T("Adding a white background", "جار إضافة خلفية بيضاء")
 	case "mute":
-		return T("Removing the sound", "جارٍ إزالة الصوت")
+		return T("Removing the sound", "جار إزالة الصوت")
 	case "speed":
-		return T("Speeding up 2×", "جارٍ التسريع 2×")
+		return T("Speeding up 2×", "جار التسريع 2×")
 	case "snapshot":
-		return T("Taking a snapshot", "جارٍ التقاط صورة")
+		return T("Taking a snapshot", "جار التقاط صورة")
 	case "split":
-		return T("Splitting", "جارٍ التقسيم")
+		return T("Splitting", "جار التقسيم")
 	case "normalize":
-		return T("Normalizing the volume", "جارٍ موازنة الصوت")
+		return T("Normalizing the volume", "جار موازنة الصوت")
 	case "visualize":
-		return T("Drawing the waveform", "جارٍ رسم الموجة الصوتية")
+		return T("Drawing the waveform", "جار رسم الموجة الصوتية")
 	case "channels":
-		return T("Changing channels", "جارٍ تغيير القنوات")
+		return T("Changing channels", "جار تغيير القنوات")
 	case "extract":
-		return T("Extracting", "جارٍ الاستخراج")
+		return T("Extracting", "جار الاستخراج")
 	case "merge":
-		return T("Merging into one PDF", "جارٍ الدمج في ملف PDF واحد")
+		return T("Merging into one PDF", "جار الدمج في ملف PDF واحد")
 	case "blackbg":
-		return T("Adding a black background", "جارٍ إضافة خلفية سوداء")
+		return T("Adding a black background", "جار إضافة خلفية سوداء")
 	}
 	return label
 }

@@ -507,7 +507,7 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 			// palettegen holds every frame in memory, so a long video
 			// would crawl and sit at 0%: refuse anything over 10 s
 			if mi.duration > 10 {
-				return "", errors.New(tr("GIF supports videos up to 10 seconds only", "صيغة GIF تدعم الفيديو حتى 10 ثوانٍ فقط"))
+				return "", errors.New(tr("GIF supports videos up to 10 seconds only", "صيغة GIF تدعم الفيديو حتى 10 ثوان فقط"))
 			}
 			return videoToGIF(ctx, path, dst, mi, progress)
 		}
