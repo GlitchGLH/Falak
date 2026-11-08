@@ -162,10 +162,10 @@ func (a *App) offerHelper() {
 	helperAsked = true
 	msg := T("When you drag from the desktop, Windows hides the Shift key and mouse button from Falak, so the wheel can't appear there.\n\n"+
 		"The fix is a small helper with administrator rights whose only job is to read the keys and pass them to Falak. "+
-		"Windows will ask for your approval once.\n\nStart the helper now?",
+		"Windows will ask for your approval each time the helper starts.\n\nStart the helper now?",
 		"عند السحب من سطح المكتب يُخفي ويندوز عن «فلك» حالة زر Shift وزر الفأرة، ولهذا لا تظهر العجلة هناك.\n\n"+
 			"الحل تشغيل مساعد صغير بصلاحيات المسؤول، وظيفته الوحيدة قراءة حالة الأزرار وإرسالها إلى «فلك». "+
-			"سيطلب ويندوز موافقتك مرة واحدة فقط.\n\nهل تريد تشغيل المساعد الآن؟")
+			"سيطلب ويندوز موافقتك في كل مرة يعمل فيها المساعد.\n\nهل تريد تشغيل المساعد الآن؟")
 	r, _, _ := pMessageBoxW.Call(0, uintptr(unsafe.Pointer(utf16(msg))), uintptr(unsafe.Pointer(utf16(appName))),
 		0x4|0x20|rtl()|MB_TOPMOST)
 	if r == 6 {
