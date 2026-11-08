@@ -664,7 +664,7 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	vf := "scale='if(gt(ih,1080),-2,iw)':'min(ih,1080)'"
 	// pass 1: analyse only (no sound, no real output file)
 	p1 := []string{"-map", "0:v:0?", "-vf", vf, "-c:v", "libx264", "-preset", "veryfast",
-		"-b:v", br, "-pass", "1", "-passlogfile", passlog, "-an", "-f", "null"}
+		"-b:v", br, "-pass:v", "1", "-passlogfile:v", passlog, "-an", "-f", "null"}
 	if err := ffmpegRaw(ctx, nil, path, nullDev, p1, mi.duration, func(f float64) {
 		if progress != nil {
 			progress(f * 0.45)
@@ -673,8 +673,11 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 		return "", err
 	}
 	// pass 2: the real encode, into the temporary file
+	// -pass:v / -passlogfile:v: only the video is two-pass. A plain "-pass 2"
+	// also applies to the AAC sound in current FFmpeg builds, which then looks
+	// for a pass-1 log the sound never wrote ("Error opening output files").
 	p2 := []string{"-map", "0:v:0?", "-map", "0:a:0?", "-vf", vf, "-c:v", "libx264", "-preset", "veryfast",
-		"-b:v", br, "-pass", "2", "-passlogfile", passlog, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k"}
+		"-b:v", br, "-pass:v", "2", "-passlogfile:v", passlog, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k"}
 	if err := ffmpegRaw(ctx, nil, path, tmp, p2, mi.duration, func(f float64) {
 		if progress != nil {
 			progress(0.45 + f*0.54)
