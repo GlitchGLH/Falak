@@ -203,6 +203,9 @@ Section Uninstall
   Delete "$SMPROGRAMS\Falak.lnk"
   Delete "$DESKTOP\Falak.lnk"
   RMDir "$SMPROGRAMS"
+  ; Engines: now in $LOCALAPPDATA\Falak\tools (removed below with the rest of
+  ; Falak's data); earlier builds kept them in the default install folder.
+  RMDir /r "$LOCALAPPDATA\Programs\Falak\tools"
   ; Only the files this installer put in $INSTDIR (plus Falak's own
   ; self-update leftovers), never the whole folder: the user may have picked
   ; a folder that holds other files. The folder goes only if it is now empty.

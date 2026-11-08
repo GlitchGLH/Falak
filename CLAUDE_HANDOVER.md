@@ -16,7 +16,7 @@ conversion wheel for Windows 10/11 (x64)**. Drag any file with **Shift held**, a
 radial wheel pops up around the cursor. Each slice is one target format or tool; drop on a slice
 to convert. It is fully bilingual (**English / Arabic with RTL mirroring**), light/dark aware,
 renders its whole UI itself (no system controls), and converts with open engines: FFmpeg,
-PDFium, qpdf and resvg are downloaded on demand to `%TEMP%\falak-tools`; libavif/aom/dav1d,
+PDFium, qpdf and resvg are downloaded on demand to `%LOCALAPPDATA%\Falak\tools`; libavif/aom/dav1d,
 libwebp and the pure-Rust `heic` decoder crate are embedded (WASM, transpiled to Go). Author: **UncleGlitch**; license **MIT**;
 repo **github.com/GlitchGLH/Falak** (public).
 

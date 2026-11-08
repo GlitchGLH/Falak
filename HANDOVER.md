@@ -44,7 +44,7 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
 | `%LOCALAPPDATA%\Programs\Falak` | self-installed copy `Falak.exe` (`.new`/`.old` transient) |
 | `%LOCALAPPDATA%\Falak` | `falak.log` (+`.old`), crash reports |
 | Scheduled task `Falak\KeysHelper` | no longer created (the helper now starts through a UAC prompt each time); a task left by earlier builds is deleted by the elevated helper, the installer and the uninstaller |
-| `%TEMP%\falak-tools` | downloaded engines: FFmpeg, PDFium, qpdf, resvg |
+| `%LOCALAPPDATA%\Falak\tools` | downloaded engines: FFmpeg, PDFium, qpdf, resvg (pinned; each folder has `falak-engine.txt`). Earlier builds used `%LOCALAPPDATA%\Programs\Falak\tools`; the app and the uninstaller remove it |
 | session-only | mutex `Local\FalakFileWheel`; reads `Themes\Personalize\AppsUseLightTheme`; no shell extensions / file associations |
 
 ## Standing rules

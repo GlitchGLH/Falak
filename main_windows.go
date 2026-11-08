@@ -181,7 +181,13 @@ func main() {
 	soundEnabled = soundOn()
 	conv.HidePath = hidePath
 	conv.RarHint = winrarFromRegistry
-	conv.ToolsDir = filepath.Join(installDir(), "tools")
+	// Engines live in Falak's own data folder (removed whole by the
+	// uninstaller), never in the install folder, which the user may have
+	// chosen and may share with other files. Earlier builds used
+	// <default install folder>\tools; those copies are removed (the pinned
+	// engines are downloaded again anyway).
+	conv.ToolsDir = filepath.Join(os.Getenv("LOCALAPPDATA"), "Falak", "tools")
+	go os.RemoveAll(filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Falak", "tools"))
 	conv.PrepareCmd = func(c *exec.Cmd) {
 		c.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
 	}
