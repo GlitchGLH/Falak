@@ -217,9 +217,17 @@ func (a *App) showHelperHint() {
 	}
 	helperHint = true
 	logf("helper hint: showing it (once per session)")
-	a.balloon(T("Desktop drags need the helper", "السحب من سطح المكتب يحتاج المساعد"),
-		T("Falak can't read the Shift key when dragging from the desktop unless the Key-reading helper is on. Turn it on from the Falak icon next to the clock.",
-			"لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب إلا بتشغيل «مساعد قراءة الأزرار». شغّله من أيقونة «فلك» بجانب الساعة."), false)
+	title := T("Desktop drags need the helper", "السحب من سطح المكتب يحتاج المساعد")
+	body := T("Falak can't read the Shift key when dragging from the desktop unless the Key-reading helper is on. Turn it on from the Falak icon next to the clock.",
+		"لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب إلا بتشغيل «مساعد قراءة الأزرار». شغّله من أيقونة «فلك» بجانب الساعة.")
+	a.balloon(title, body, false)
+	// Windows may silence tray notifications (notifications off, Do not
+	// disturb), so the hint is also shown in a Falak window, on its own
+	// goroutine so the wheel and the tray keep working while it is open.
+	go func() {
+		messageBox(title+"\n\n"+body, MB_ICONINFO)
+		logf("helper hint: window closed")
+	}()
 }
 
 // relaunchNormal restarts Falak at the normal level when it was started as
