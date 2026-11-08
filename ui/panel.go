@@ -40,6 +40,7 @@ type Panel struct {
 
 	title, file string
 	Dark        bool    // dark theme glass with light text
+	RTL         bool    // Arabic: text on the right, the bar fills from the right
 	progress    float64 // 0..1, or -1 while unknown
 	shown       float64
 	last        time.Time
@@ -67,8 +68,15 @@ func NewPanel(scale float64, bg *image.RGBA, fonts *Fonts, title, file string, n
 
 // NewPanelTheme is NewPanel in the light or the dark theme.
 func NewPanelTheme(scale float64, bg *image.RGBA, fonts *Fonts, title, file string, dark bool, now time.Time) *Panel {
+	return NewPanelDir(scale, bg, fonts, title, file, dark, false, now)
+}
+
+// NewPanelDir is NewPanelTheme for a reading direction: with rtl (Arabic)
+// the title and the file line sit at the right edge and the bar fills from
+// the right; the X stays at the top left, as in the Arabic compress dialog.
+func NewPanelDir(scale float64, bg *image.RGBA, fonts *Fonts, title, file string, dark, rtl bool, now time.Time) *Panel {
 	w, h := PanelSize(scale)
-	p := &Panel{Scale: scale, W: w, H: h, Fonts: fonts, title: title, file: file, Dark: dark,
+	p := &Panel{Scale: scale, W: w, H: h, Fonts: fonts, title: title, file: file, Dark: dark, RTL: rtl,
 		progress: -1, openAt: now, last: now, px: -1e6, py: -1e6}
 	p.frame = image.NewRGBA(image.Rect(0, 0, w, h))
 	p.work = image.NewRGBA(image.Rect(0, 0, w, h))
@@ -123,7 +131,12 @@ func (p *Panel) buildBase(bg *image.RGBA) *image.RGBA {
 		maxW := (PanelW - titleX - 24) * s
 		t := Visual(fitText(dc, p.title, maxW))
 		capH := capHeightOf(f)
-		dc.DrawString(t, (PanelMargin+titleX)*s, (PanelMargin+closeCY)*s+capH/2)
+		x := (PanelMargin + titleX) * s
+		if p.RTL { // right edge, the same 24 margin as the bar
+			tw, _ := dc.MeasureString(t)
+			x = (PanelMargin+PanelW-24)*s - tw
+		}
+		dc.DrawString(t, x, (PanelMargin+closeCY)*s+capH/2)
 	}
 	return out
 }
@@ -254,7 +267,12 @@ func (p *Panel) Render(now time.Time) *image.RGBA {
 		pw, _ := dc.MeasureString(pct)
 		name := fitText(dc, p.file, barW*s-pw)
 		name = Visual(name)
-		dc.DrawString(name+pct, m+subX*s, m+subY*s+capHeightOf(f)/2)
+		x := m + subX*s
+		if p.RTL { // ends where the bar ends
+			lw, _ := dc.MeasureString(name + pct)
+			x = m + (barX+barW)*s - lw
+		}
+		dc.DrawString(name+pct, x, m+subY*s+capHeightOf(f)/2)
 	}
 
 	// bar
@@ -267,7 +285,12 @@ func (p *Panel) Render(now time.Time) *image.RGBA {
 	}
 	dc.Fill()
 	if fw := bw * clampF(p.shown, 0, 1); fw > 0.5 {
-		dc.DrawRoundedRectangle(bx, by, math.Max(fw, bh), bh, bh/2)
+		fw = math.Max(fw, bh)
+		fx := bx
+		if p.RTL { // fills from the right
+			fx = bx + bw - fw
+		}
+		dc.DrawRoundedRectangle(fx, by, fw, bh, bh/2)
 		dc.SetColor(Accent)
 		dc.Fill()
 	}

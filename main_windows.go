@@ -567,7 +567,7 @@ func (a *App) showPanel() {
 	x := clamp32(req.cx-int32(pw)/2, mi.RcWork.Left, mi.RcWork.Right-int32(pw))
 	y := clamp32(req.cy-int32(ph)/2, mi.RcWork.Top, mi.RcWork.Bottom-int32(ph))
 	now := time.Now()
-	a.panel = ui.NewPanelTheme(req.scale, nil, a.fonts, req.title, req.file, darkMode(), now)
+	a.panel = ui.NewPanelDir(req.scale, nil, a.fonts, req.title, req.file, darkMode(), arabic, now)
 	a.panelJob = req.job
 	a.panel.SetProgress(jobProgressOf(req.job))
 	a.winX, a.winY = x, y
@@ -606,7 +606,7 @@ func (a *App) showDonePanel(place panelReq, title, line string) {
 	x := clamp32(place.cx-int32(pw)/2, mi.RcWork.Left, mi.RcWork.Right-int32(pw))
 	y := clamp32(place.cy-int32(ph)/2, mi.RcWork.Top, mi.RcWork.Bottom-int32(ph))
 	now := time.Now()
-	a.panel = ui.NewPanelTheme(place.scale, nil, a.fonts, title, line, darkMode(), now)
+	a.panel = ui.NewPanelDir(place.scale, nil, a.fonts, title, line, darkMode(), arabic, now)
 	a.panelJob, a.donePanel, a.doneUntil = 0, true, now.Add(donePanelFor)
 	a.panel.SetProgress(1)
 	a.winX, a.winY = x, y
