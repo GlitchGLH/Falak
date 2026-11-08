@@ -518,6 +518,9 @@ func isHaraka(c rune) bool { return c >= 0x064B && c <= 0x065F || c == 0x0670 }
 
 func shapeArabic(r []rune) []rune {
 	joinsNext := func(c rune) bool { f, ok := arForms[c]; return ok && f[2] != 0 }
+	// joinsPrev: the letter has a final form, so it can join the letter
+	// before it. The hamza (U+0621) has none: it never joins either side.
+	joinsPrev := func(c rune) bool { f, ok := arForms[c]; return ok && f[1] != 0 }
 	// neighbours, skipping diacritics
 	prev := func(i int) rune {
 		for i--; i >= 0; i-- {
@@ -543,7 +546,7 @@ func shapeArabic(r []rune) []rune {
 			out = append(out, c)
 			continue
 		}
-		fromPrev := joinsNext(prev(i))
+		fromPrev := joinsNext(prev(i)) && f[1] != 0
 		nc, ni := next(i)
 		if c == 0x0644 {
 			if la, ok := lamAlef[nc]; ok {
@@ -556,8 +559,7 @@ func shapeArabic(r []rune) []rune {
 				continue
 			}
 		}
-		_, nextIsAr := arForms[nc]
-		toNext := f[2] != 0 && nextIsAr
+		toNext := f[2] != 0 && joinsPrev(nc)
 		switch {
 		case fromPrev && toNext:
 			out = append(out, f[3])
