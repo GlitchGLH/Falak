@@ -2,30 +2,30 @@
 
 ## Current state (latest session)
 
-Written at the end of the 2026-11-08/09 review session. This section wins over anything
-older below it. Arabic is quoted character for character.
+Written at the end of the 2026-11-09 session (after the 2026-11-08/09 review session). This
+section wins over anything older below it. Arabic is quoted character for character.
 
 ### Where things are
 - Repository: `C:\Projects\Falak`, git branch `main`, local config `core.autocrlf=false`,
   `user.name=UncleGlitch`, `user.email=GlitchGLH@users.noreply.github.com` (local only; the
   owner may change it). History starts at `8816700` (import of the handed-over state). Nothing
   has been pushed to GitHub.
-- HEAD before this handover commit: `7e0b4eb`. Working tree clean.
+- Working tree clean after this handover commit.
 - Version: still **1.0.0** everywhere.
 - Release folders (Microsoft false-positive review pending on their hashes): never modify;
   read only with the owner's explicit permission:
   - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
   - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
 
-### Latest build/ outputs (built from `7e0b4eb`, vcs.modified=false; not published)
-| File | SHA-256 |
-|---|---|
-| `build/Falak.exe` | `bfd0e80fd3a0472dad623f3a0844564ecb95d63e52c03e4607870c6998d70e9c` |
-| `build/FalakSetup-1.0.0.exe` | `811a2371910d00c996ae3e552d80fda842dfc935dbb0e4d8dd4ed4ea230cd9d8` |
-| `build/Falak-1.0.0-portable.zip` | `47668cdebe00e9c178432d51e67cad5b52593583f9d2670023bd863d0797471b` |
+### Latest build/ outputs (not published)
+The three files in `build/` (`Falak.exe`, `FalakSetup-1.0.0.exe`,
+`Falak-1.0.0-portable.zip`) are rebuilt from the final HEAD of the 2026-11-09 session (the
+commit that holds this text or the one after it, `vcs.modified=false`); their SHA-256 values
+are in that session's report (`sha256sum build/*` shows them). A file cannot list the hashes
+of a build made from itself.
 
 Every commit changes these hashes (Go embeds the git revision). Do not rebuild until the
-owner asks (NEXT item 5 is the final build).
+owner asks (NEXT item 3 is the final build).
 
 ### Commits since the import
 | Commit | Title | Purpose |
@@ -61,6 +61,11 @@ owner asks (NEXT item 5 is the final build).
 | `0b40241` | helper hint also shown in a Falak window | Message box in addition to the balloon (balloons are silenced on the owner's machine). |
 | `06b34cd` | first run also opens the How to use card | Only on the very first run, never with `--startup`. |
 | `7e0b4eb` | background job done: the progress window shows Done briefly | 2.5 s, no focus, X / new drag close it, not over the wheel or another panel. |
+| `ed09f1c` | session handover | This section (2026-11-08/09). |
+| `87d522e` | compress to a set size works before FFmpeg is downloaded | The dialog read the length with FFmpeg at open; on a fresh install it was 0 and every target was "too small". `conv.TargetTooSmall`: unknown length is never too small; the job checks again after the download. |
+| `fd5b793` | compress to a set size counts MB like File Explorer | `ui.BytesPerMB = 1,048,576` for "smaller than the original", the red hint and the default offer (the bitrate already used it). Answer to Q4. |
+| `6618323` | a finished file never replaces a file that already exists | `finishTemp` moves with `renameNoReplace` (Windows `MoveFileEx` without replace) and continues the start-time " (n)" series (`nameSeries`); output helpers return the real path. Answer to Q5a. |
+| `788ec66` | handover records portable downgrade and wmQuitUpdate as deferred | Q5b, Q5c. |
 
 UX 5 hint texts (owner-approved, in `helper_windows.go`):
 - Title EN "Desktop drags need the helper" / AR «السحب من سطح المكتب يحتاج المساعد»
@@ -92,6 +97,18 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   SVG→PNG work.
 - Compress to a set size from `G:\NVIDIA\Desktop` at 60 MB and 40 MB completed, with the
   editable size field (caret, focus border), and no `.falak-tmp` was left behind.
+- 2026-11-09 (builds from `7e0b4eb` and `87d522e`):
+  - First-run "How to use" card: opens only on the first run; not after Quit and restart,
+    not with Start with Windows.
+  - Uninstall answering «لا» deletes the settings (`HKCU\Software\Falak`, including
+    `Welcomed`) and the tools (`%LOCALAPPDATA%\Falak\tools`).
+  - The "Done" window comes back after a background job, closes by itself, does not steal
+    the focus and plays no new sound.
+  - Compress to 40 MB on a fresh install without FFmpeg worked (`87d522e`): FFmpeg was
+    downloaded first, output 38 MB.
+  - Custom folder `C:\FalakTest`: the uninstaller removed only Falak's files and kept
+    `keep.txt`; answering «نعم» kept the settings (`Welcomed`), and the card did not open
+    on reinstall.
 
 ### Owner's machine notes
 - Notifications are disabled by Chris Titus Tech WinUtil:
@@ -99,7 +116,14 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `HKCU\Software\Microsoft\Windows\CurrentVersion\PushNotifications\ToastEnabled = 0`.
   Tray balloons never show here: never rely on balloons alone for anything the user must see.
   **Never change the owner's Windows settings** (read only, as `notificationState()` does).
-- `HKCU\Software\Falak` already has `Welcomed`, so the next start is not a first run (see NEXT 1).
+- `HKCU\Software\Falak` has `Welcomed` (kept by the «نعم» uninstall test), so the next start
+  is not a first run.
+- After a restart the wheel appears on desktop drags **without** the helper (log: drag from
+  explorer.exe, `held=true dragging=true rawL=0x8000`, wheel shown). So the helper hint
+  window (`0b40241`) cannot be tested on this machine.
+- SteelSeries Sonar is installed and may be why the wheel appear sound is sometimes not
+  heard (the stream closes after 20 s idle; `appear.wav` is 100 ms). **No sound change was
+  made.**
 - Defender real-time protection is on; Controlled Folder Access is off.
 - Drive G: (NTFS, "My Archive") holds NVIDIA recordings in `G:\NVIDIA\Desktop`; programs
   there briefly lock new files.
@@ -108,27 +132,27 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Code review findings fixed (uninstaller, compress lock, helper elevation, PowerShell,
   pinned engines, one install folder, vendoring, temp leftovers, compress in watched
   folders, editable size box, helper state/hint, first-run card, background "Done").
+- 2026-11-09: compress to a set size before FFmpeg is downloaded (`87d522e`); one MB unit
+  (Q4, `fd5b793`); a finished file never replaces an existing one (Q5a, `6618323`); Q5b/Q5c
+  recorded as deferred (`788ec66`); old `deps` folder deleted (Q6); open questions answered.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
 ### IN PROGRESS
-- Nothing in progress in code. The last build (`7e0b4eb`) is waiting for NEXT 1 and 2.
+- Nothing in progress in code. The build in `build/` (final HEAD of 2026-11-09) is waiting
+  for NEXT 1.
 
 ### NEXT (in this order)
-1. Uninstall test answering «لا» (settings must be deleted, including `Welcomed`). Then
-   install the new build and run Falak from the installer's finish page: the "How to use"
-   card must open (`06b34cd`). Then restart Falak and confirm the card does NOT open again,
-   and does not open with "Start with Windows".
-2. Manual test of the helper hint message box (`0b40241`) and the progress window shown again
-   for 2-3 seconds with «اكتمل التحويل» after a background job (`7e0b4eb`): no focus
-   stealing, no new sound, X and a new drag close it.
-3. Custom folder `C:\FalakTest` with `keep.txt`, answering «نعم» (settings kept, `keep.txt` kept).
-4. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
+1. Quick manual test of `fd5b793` (size box counts MB like Explorer: a target equal to the
+   size Explorer shows is refused, one less is accepted) and `6618323` (a file created under
+   the output name during a long job is kept; the result gets " (n)").
+2. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
    owner's approval.
-5. Final commit and final build. No more builds after that.
-6. New VirusTotal scan and new Microsoft false-positive report on the final
+3. Final build. No more builds after that.
+4. New VirusTotal scan and new Microsoft false-positive report on the final
    `FalakSetup-1.0.0.exe`.
-7. GitHub release v1.0.0 (account GlitchGLH, repo Falak, author UncleGlitch, MIT license).
+5. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
+   see Q1 below for how).
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -142,22 +166,17 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - **wmQuitUpdate:** any local program can close Falak by sending `wmQuitUpdate` (0x8009) to
   the `FalakMsg` window (the uninstaller/installer use it to close Falak). Known; not fixed.
 
-### Open questions (word for word, not yet answered by the owner)
-1. "This local repository's history starts at 8816700, while github.com/GlitchGLH/Falak has the
-   old history. How do you want to publish: push this history to a new branch, replace main,
-   or upload files as before?"
-2. "The local git identity is UncleGlitch <GlitchGLH@users.noreply.github.com>. Is that the
-   name and email you want on the commits?"
-3. "The vendored dependencies make the repository about 47 MB (clone about 61 MB) instead of
-   about 2.6 MB. Is that acceptable for the public repository?"
-4. "Compress to a set size computes MB as 1,048,576 bytes (a 100 MB target gave 103.3 MB =
-   98.5 MB in Explorer), while the size check uses 1,000,000 bytes. Keep it, or align both?"
-5. "Not fixed from the first review (low priority): a finished file can replace a file of the
-   same name created during a long conversion (os.Rename replaces); running an older portable
-   copy downgrades the installed Falak; any local program can close Falak with wmQuitUpdate.
-   Fix any of these before the release?"
-6. "The old deps folder still sits in C:\Projects\Falak\deps (322 MB, gitignored, no longer
-   used since c311c4e). May it be deleted?"
+### Answers to the open questions (owner, 2026-11-09)
+1. Publishing: when we publish, first keep the current GitHub `main` in a backup branch
+   `old-upload`, then make this local history `main`. **Do NOT push until the owner says so.**
+2. Git identity: `UncleGlitch <135931273+GlitchGLH@users.noreply.github.com>`.
+3. The 47 MB vendored repository is accepted.
+4. Done: compress to a set size and its checks use 1 MB = 1,048,576 bytes, like File
+   Explorer (`fd5b793`).
+5. (a) Done: a finished file never replaces an existing one (`6618323`). (b) portable
+   downgrade and (c) `wmQuitUpdate`: deferred, see "Known and deferred".
+6. Done: `C:\Projects\Falak\deps` deleted (nothing in the build or tests used it; backup:
+   `C:\Users\Glitch\Desktop\Falak-handover\falak-deps.zip`). `vendor/` untouched.
 
 ### Environment
 - Go **go1.27.3 windows/amd64** (`C:\Program Files\Go`), installed with winget
@@ -166,8 +185,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Python **3.14.10**, run as `py` (`python` is the Store alias and does not work in Git Bash).
 - go-winres not installed (the `.syso` is checked in).
 - `C:\Projects\deps` junction: created for the first test run, **removed after vendoring**
-  (`c311c4e`); builds and tests no longer need it. The old copies remain in
-  `C:\Projects\Falak\deps` (gitignored, unused).
+  (`c311c4e`); builds and tests no longer need it. The old copies in `C:\Projects\Falak\deps`
+  were deleted on 2026-11-09 (backup `C:\Users\Glitch\Desktop\Falak-handover\falak-deps.zip`).
 - FFmpeg for tests: **`C:\Projects\tools\ffmpeg-9.0.2`** (the pinned 9.0.2, outside the
   repo; put it on PATH; FFmpeg tests skip without one). The older `C:\Projects\tools\ffmpeg`
   (BtbN master) was deleted at the owner's request.
