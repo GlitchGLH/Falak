@@ -1,5 +1,212 @@
 # CLAUDE_HANDOVER — Falak 1.0.0
 
+## Current state (latest session)
+
+Written at the end of the 2026-11-08/09 review session. This section wins over anything
+older below it. Arabic is quoted character for character.
+
+### Where things are
+- Repository: `C:\Projects\Falak`, git branch `main`, local config `core.autocrlf=false`,
+  `user.name=UncleGlitch`, `user.email=GlitchGLH@users.noreply.github.com` (local only; the
+  owner may change it). History starts at `8816700` (import of the handed-over state). Nothing
+  has been pushed to GitHub.
+- HEAD before this handover commit: `7e0b4eb`. Working tree clean.
+- Version: still **1.0.0** everywhere.
+- Release folders (Microsoft false-positive review pending on their hashes): never modify;
+  read only with the owner's explicit permission:
+  - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
+  - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
+
+### Latest build/ outputs (built from `7e0b4eb`, vcs.modified=false; not published)
+| File | SHA-256 |
+|---|---|
+| `build/Falak.exe` | `bfd0e80fd3a0472dad623f3a0844564ecb95d63e52c03e4607870c6998d70e9c` |
+| `build/FalakSetup-1.0.0.exe` | `811a2371910d00c996ae3e552d80fda842dfc935dbb0e4d8dd4ed4ea230cd9d8` |
+| `build/Falak-1.0.0-portable.zip` | `47668cdebe00e9c178432d51e67cad5b52593583f9d2670023bd863d0797471b` |
+
+Every commit changes these hashes (Go embeds the git revision). Do not rebuild until the
+owner asks (NEXT item 5 is the final build).
+
+### Commits since the import
+| Commit | Title | Purpose |
+|---|---|---|
+| `8816700` | import current state into git | First commit of the handed-over 1.0.0 source (old history is not in this repo). |
+| `a0456db` | uninstaller reads the keep-settings answer correctly | `MessageBox … IDYES` jump instead of `Pop $0` (it read a leftover nsExec code); every nsExec result popped. |
+| `d4b9569` | uninstaller removes only the files it installed | No `RMDir /r "$INSTDIR"`; deletes its own files, `RMDir` only when empty; audit check. |
+| `b3a7987` | video compress no longer blocks other conversions | `engineMu` held only for the FFmpeg download, not the whole encode. |
+| `7565407` | handover HEIC notes match the code | HEIC input = gen2brain/heic (pure-Rust crate, WASM→Go); output = FFmpeg libx265 + own HEIF container. |
+| `79b7d5c` | video compress-to-size works with current FFmpeg | `-pass:v` / `-passlogfile:v` (plain `-pass 2` hit the AAC stream). |
+| `3db401c` | compress leaves no two-pass logs in .falak-tmp | Removed `-0.log*` logs; test checks `.falak-tmp` is gone. |
+| `f6eedbc` | GIF progress test uses a 9 s clip | Test was timing-flaky on fast machines. |
+| `4901549` | key helper asks UAC each time; no scheduled task | Removed silent-elevation task `Falak\KeysHelper`; helper/installer/uninstaller delete an old one. |
+| `cf15b37` | NSIS script compiles with makensis on Windows | `${__FILEDIR__}\…` backslashes (Windows makensis 3.13 failed on `/`); audit check. |
+| `0f3acfe` | uninstaller without PowerShell; Falak closed by message | NSIS `EnumRegValue` loop for Layers; `wmQuitUpdate` (0x8009) to `FalakMsg`, wait 5 s, then `taskkill /F`, +3 s for the helper. |
+| `14462d5` | helper prompt says approval is asked each time | Owner text: EN "Windows will ask for your approval each time the helper starts." AR «سيطلب ويندوز موافقتك في كل مرة يعمل فيها المساعد.» |
+| `9821259` | engines pinned to fixed releases with SHA-256 checks | `conv/engines.go`, `falak-engine.txt`, hash check, `enginesnet` test. |
+| `b32152d` | engines live in %LOCALAPPDATA%\Falak\tools | Engines out of the install folder; old `Programs\Falak\tools` removed. |
+| `6081f23` | one install folder when the user picks their own | `installDir()` = installer's InstallLocation; old second copy removed; `InstallDirRegKey`. |
+| `c311c4e` | vendor the dependencies; builds from a fresh clone | `vendor/` + `go.sum`, no `../deps`; all deps proven unmodified upstream; 3 version replaces; `godebug default=go1.24`; test images in `conv/testdata`. |
+| `bd93a63` | docs match the review changes | README (English part), notices, licenses (x/sync dropped), handovers. |
+| `50cdd9d` | CLAUDE.md with the permanent rules | Rule file at repo root. |
+| `48618a9` | Arabic README matches the review changes | Owner's Arabic: uninstall sentence, helper section, pinned-engines sentence. |
+| `3967648` | portable README.txt in the repo | `installer/portable/README.txt`, owner's EN+AR text. |
+| `d8c6433` | build step for the portable zip | `installer/make_portable.py` (deterministic zip of exactly 3 files) + audit check. |
+| `1dbcfbd` | CLAUDE.md release-folder rule: read only with permission | Both release-folder paths listed. |
+| `4fc1ea2` | compress to a set size works in watched folders; failures shown | Pass logs in `%TEMP%\falak-pass-*`; `completePassLogs` renames x264's `*.temp` logs with retry; FFmpeg errors logged (args + last 15 stderr lines) and the specific line shown; failed jobs also show a message box. |
+| `7516d74` | the target size box can be focused and edited | Focus, caret, selection, Enter; default 100 MB or half the original (≤ 100 MB). |
+| `bc37f7d` | no leftovers in .falak-tmp after failed or interrupted jobs | Delete/move retry 5 s; `temp-folders.txt` record; start-up cleanup of stale `<UnixNano>-<n>…` entries only. |
+| `8ea1363` | helper menu item shows whether the helper really runs | Toggle = helper running; refusing UAC turns the setting off. |
+| `a52b66c` | once-per-session hint when a desktop drag needs the helper | Owner text (see below), tray balloon. |
+| `1927fab` | log every helper hint/offer attempt and tray notification | Logs Shell_NotifyIcon result + notification settings (read only). |
+| `0b40241` | helper hint also shown in a Falak window | Message box in addition to the balloon (balloons are silenced on the owner's machine). |
+| `06b34cd` | first run also opens the How to use card | Only on the very first run, never with `--startup`. |
+| `7e0b4eb` | background job done: the progress window shows Done briefly | 2.5 s, no focus, X / new drag close it, not over the wheel or another panel. |
+
+UX 5 hint texts (owner-approved, in `helper_windows.go`):
+- Title EN "Desktop drags need the helper" / AR «السحب من سطح المكتب يحتاج المساعد»
+- Body EN "Falak can't read the Shift key when dragging from the desktop unless the Key-reading helper is on. Turn it on from the Falak icon next to the clock."
+- Body AR «لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب إلا بتشغيل «مساعد قراءة الأزرار». شغّله من أيقونة «فلك» بجانب الساعة.»
+
+### Pinned engines
+Stored in `%LOCALAPPDATA%\Falak\tools\<engine>\`. Defined in `conv/engines.go` (URL +
+SHA-256 of the archive). Each download is hashed while it is written; a mismatch deletes it
+and reports the existing "The download didn't finish" / «التنزيل لم يكتمل» inside the
+engine's existing "Couldn't download …" message. Each engine folder gets `falak-engine.txt`
+(hash + URL); a folder without the current pin is downloaded again.
+| Engine | Release | Archive SHA-256 |
+|---|---|---|
+| FFmpeg | 9.0.2 `full_build-shared`, GyanD/codexffmpeg | `8d31e162f1616e37aab3fa2db991b97e1b8dbeb1c8465fd81a81be16ff91b328` |
+| PDFium | chromium/8138, bblanchon/pdfium-binaries | `8d48973e3eb472dda0f5f2435e595ac043f9f2219dd71883392f549445afa8a5` |
+| qpdf | 12.3.2 mingw64 | `ebeb4692434a8cb8a27f876584c0c2b402b6251dc6c8ed4b39cf2304cada10e0` |
+| resvg | 0.49.0 win-x86_64 | `38af9631b37e61118a32a5ef31e6be6af083eda63b4c17ffc4fdc63e449277df` |
+After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
+
+### Verified by the owner on real Windows
+- Upgrade from the old release: the old `Falak\KeysHelper` task was removed, the old helper
+  closed, the old `%LOCALAPPDATA%\Programs\Falak\tools` folder removed, Falak closed by the
+  installer.
+- Helper: UAC is asked on each start; refusing turns the setting off and the menu item goes
+  grey; enabling it from the menu and pressing Yes brings the wheel back for desktop drags.
+- All four engines downloaded into `%LOCALAPPDATA%\Falak\tools` (FFmpeg 9.0.2, PDFium
+  chromium/8138, qpdf 12.3.2, resvg 0.49.0). MP4→MP3, MP4→MKV, PDF→PNG, PDF compress and
+  SVG→PNG work.
+- Compress to a set size from `G:\NVIDIA\Desktop` at 60 MB and 40 MB completed, with the
+  editable size field (caret, focus border), and no `.falak-tmp` was left behind.
+
+### Owner's machine notes
+- Notifications are disabled by Chris Titus Tech WinUtil:
+  `HKCU\Software\Policies\Microsoft\Windows\Explorer\DisableNotificationCenter = 1` and
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\PushNotifications\ToastEnabled = 0`.
+  Tray balloons never show here: never rely on balloons alone for anything the user must see.
+  **Never change the owner's Windows settings** (read only, as `notificationState()` does).
+- `HKCU\Software\Falak` already has `Welcomed`, so the next start is not a first run (see NEXT 1).
+- Defender real-time protection is on; Controlled Folder Access is off.
+- Drive G: (NTFS, "My Archive") holds NVIDIA recordings in `G:\NVIDIA\Desktop`; programs
+  there briefly lock new files.
+
+### DONE
+- Code review findings fixed (uninstaller, compress lock, helper elevation, PowerShell,
+  pinned engines, one install folder, vendoring, temp leftovers, compress in watched
+  folders, editable size box, helper state/hint, first-run card, background "Done").
+- Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
+- Owner's manual tests listed above.
+
+### IN PROGRESS
+- Nothing in progress in code. The last build (`7e0b4eb`) is waiting for NEXT 1 and 2.
+
+### NEXT (in this order)
+1. Uninstall test answering «لا» (settings must be deleted, including `Welcomed`). Then
+   install the new build and run Falak from the installer's finish page: the "How to use"
+   card must open (`06b34cd`). Then restart Falak and confirm the card does NOT open again,
+   and does not open with "Start with Windows".
+2. Manual test of the helper hint message box (`0b40241`) and the progress window shown again
+   for 2-3 seconds with «اكتمل التحويل» after a background job (`7e0b4eb`): no focus
+   stealing, no new sound, X and a new drag close it.
+3. Custom folder `C:\FalakTest` with `keep.txt`, answering «نعم» (settings kept, `keep.txt` kept).
+4. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
+   owner's approval.
+5. Final commit and final build. No more builds after that.
+6. New VirusTotal scan and new Microsoft false-positive report on the final
+   `FalakSetup-1.0.0.exe`.
+7. GitHub release v1.0.0 (account GlitchGLH, repo Falak, author UncleGlitch, MIT license).
+
+### Rejected by the owner (do not implement)
+- Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
+  use card in addition to the «فلك يعمل في الخلفية» balloon. **Rejected.**
+- Proposal 4: replace or add to the «يستمر التحويل في الخلفية» balloon (job sent to the
+  background) with a window. **Rejected; it stays a balloon only.**
+
+### Open questions (word for word, not yet answered by the owner)
+1. "This local repository's history starts at 8816700, while github.com/GlitchGLH/Falak has the
+   old history. How do you want to publish: push this history to a new branch, replace main,
+   or upload files as before?"
+2. "The local git identity is UncleGlitch <GlitchGLH@users.noreply.github.com>. Is that the
+   name and email you want on the commits?"
+3. "The vendored dependencies make the repository about 47 MB (clone about 61 MB) instead of
+   about 2.6 MB. Is that acceptable for the public repository?"
+4. "Compress to a set size computes MB as 1,048,576 bytes (a 100 MB target gave 103.3 MB =
+   98.5 MB in Explorer), while the size check uses 1,000,000 bytes. Keep it, or align both?"
+5. "Not fixed from the first review (low priority): a finished file can replace a file of the
+   same name created during a long conversion (os.Rename replaces); running an older portable
+   copy downgrades the installed Falak; any local program can close Falak with wmQuitUpdate.
+   Fix any of these before the release?"
+6. "The old deps folder still sits in C:\Projects\Falak\deps (322 MB, gitignored, no longer
+   used since c311c4e). May it be deleted?"
+
+### Environment
+- Go **go1.27.3 windows/amd64** (`C:\Program Files\Go`), installed with winget
+  (`GoLang.Go`). Module says `go 1.25.0` with `godebug default=go1.24`.
+- NSIS **3.13** (`C:\Program Files (x86)\NSIS`), installed with winget (`NSIS.NSIS`).
+- Python **3.14.10**, run as `py` (`python` is the Store alias and does not work in Git Bash).
+- go-winres not installed (the `.syso` is checked in).
+- `C:\Projects\deps` junction: created for the first test run, **removed after vendoring**
+  (`c311c4e`); builds and tests no longer need it. The old copies remain in
+  `C:\Projects\Falak\deps` (gitignored, unused).
+- FFmpeg for tests: **`C:\Projects\tools\ffmpeg-9.0.2`** (the pinned 9.0.2, outside the
+  repo; put it on PATH; FFmpeg tests skip without one). The older `C:\Projects\tools\ffmpeg`
+  (BtbN master) was deleted at the owner's request.
+- Shell env used for every gate (Git Bash):
+  `export PATH="/c/Program Files/Go/bin:/c/Program Files (x86)/NSIS:/c/Projects/tools/ffmpeg-9.0.2:$PATH"`
+  and `GOFLAGS= GOPROXY=off GOSUMDB=off GOMEMLIMIT=2500MiB`.
+- Gates: `go test -count=1 ./...`; `GOOS=linux go vet -tags "wasm2go nodynamic" ./...`
+  (clean); `go vet -tags "wasm2go nodynamic" ./...` on Windows prints **12 pre-existing
+  "possible misuse of unsafe.Pointer" warnings** (pdfium_windows.go, wic_windows.go,
+  droptarget_windows.go, main_windows.go, menu_windows.go) — not the gate;
+  `py installer/audit_paths.py`.
+- `gofmt -l` flags **one pre-existing formatting line in `main_windows.go`** (cosmetic, never
+  part of the gate; do not reformat the file, it would touch sound call-site lines).
+- Builds, only into `build/`:
+  1. `GOOS=windows GOARCH=amd64 go build -p 1 -tags "wasm2go nodynamic" -ldflags "-s -w -H windowsgui" -trimpath -o build/Falak.exe .`
+  2. Setup: copy `installer/falak.nsi`, `raha-nsis.ico`, `license.txt` and `build/Falak.exe`
+     into `build/nsis/installer/`, `THIRD_PARTY_LICENSES.txt` into `build/nsis/`, run
+     `makensis -INPUTCHARSET UTF8 C:\Projects\Falak\build\nsis\installer\falak.nsi`
+     (output `build/FalakSetup-1.0.0.exe`), then delete `build/nsis`.
+  3. `py installer/make_portable.py` → `build/Falak-1.0.0-portable.zip`.
+- Logs on the owner's machine: `%LOCALAPPDATA%\Falak\falak.log` (readable; very useful).
+
+### Mistakes and dead ends (do not repeat)
+- Python edits through a bash heredoc mangled escapes: `\n\n` became real line breaks inside a
+  Go string, and `\t` / `\f` in Windows paths became a tab and a form feed. Write the script
+  to a file with raw strings (or edit with the Edit tool) and re-read the result.
+- Python `write_text` on Windows writes CRLF; write bytes to keep LF. `grep -c $'\r'` in Git
+  Bash miscounts; check CR bytes with Python.
+- `${__FILEDIR__}/…` in NSIS: works on Linux makensis, fails on Windows ("no files found").
+- x264 pass-1 logs in `G:\NVIDIA\Desktop` (or any folder another program watches) can stay
+  locked as `*.temp`; FFmpeg still exits 0. That is why pass logs live in `%TEMP%` and
+  `completePassLogs` exists. A reproduction in another folder passes — test in the real folder.
+- Tray balloons silently do not show when notifications are off; `Shell_NotifyIcon` still
+  returns success. Anything the user must see needs a Falak window too.
+- `audit_paths.py` once matched its own comment ("PowerShell"); the check now ignores
+  comment lines. Read gate output before committing.
+- `go vet` with `GOFLAGS=-mod=mod` stopped working after vendoring; use empty `GOFLAGS`.
+- `pdfium.dll` stays loaded in a test process; `t.TempDir()` cleanup fails on Windows.
+- Recursive deletes outside the repo (e.g. on G:) are blocked by Claude Code's safety check;
+  ask the owner to delete instead of working around it.
+- The task list tool counts and the `git commit` exit codes hide failures in pipelines;
+  check each gate's output, not just the last line.
+
+---
+
 **READ THIS FIRST (new session):** You are taking over Falak, a finished, released-quality
 Windows drag-and-drop file converter, at version **1.0.0**. Two things are in flight and
 must not be disturbed: a **Microsoft antivirus false-positive review** and a **not-yet-published
