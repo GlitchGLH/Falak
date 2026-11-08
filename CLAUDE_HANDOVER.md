@@ -66,13 +66,16 @@ section wins over anything older below it. Arabic is quoted character for charac
 
 ### Latest build/ outputs (not published)
 The three files in `build/` (`Falak.exe`, `FalakSetup-1.0.0.exe`,
-`Falak-1.0.0-portable.zip`) are rebuilt from the final HEAD of the 2026-11-09 session (the
-commit that holds this text or the one after it, `vcs.modified=false`); their SHA-256 values
-are in that session's report (`sha256sum build/*` shows them). A file cannot list the hashes
-of a build made from itself.
+`Falak-1.0.0-portable.zip`) were built from `da1d3f1` (`vcs.modified=false`); later
+commits change only documentation, and the owner chose not to rebuild for them.
+| File | SHA-256 |
+|---|---|
+| `build/Falak.exe` | `74433992a92d7967d5e500f85714570c266de0ac633fd4551c8ebc1a2b2d0813` |
+| `build/FalakSetup-1.0.0.exe` | `7369dcbd4b73ae745d2abc3280309f12ce796d6438a5a91a3ce63f601102ee31` |
+| `build/Falak-1.0.0-portable.zip` | `67c0606d5fad3c8f5c2068b7a3fe987688de25c3102756e3df8906f279e3982e` |
 
 Every commit changes these hashes (Go embeds the git revision). Do not rebuild until the
-owner asks (NEXT item 3 is the final build).
+owner asks (NEXT item 2 is the final build).
 
 ### Commits since the import
 | Commit | Title | Purpose |
@@ -156,6 +159,16 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   - Custom folder `C:\FalakTest`: the uninstaller removed only Falak's files and kept
     `keep.txt`; answering «نعم» kept the settings (`Welcomed`), and the card did not open
     on reinstall.
+- 2026-11-09 (Setup built from `da1d3f1`, installed over the previous install):
+  - **MB unit (`c504236`) PASSED.** Input `G:\NVIDIA\Desktop\Desktop 2026.11.06 -
+    19.45.12.04.DVR.mp4` (Explorer: 135,027 KB). The compress dialog showed "Original size:
+    131.9 MB" (matches Explorer, not 138). Target 132: red "Enter a size smaller than the
+    original file", Compress disabled. Target 131: no message, Compress enabled (not pressed).
+  - **No overwrite (`3bdb5b0`) PASSED.** During an MP4 -> WMV conversion of the same file, a
+    1 KB placeholder `Desktop 2026.11.06 - 19.45.12.04.DVR.wmv` was created in the same
+    folder. Afterwards the placeholder was untouched (1 KB) and the output was saved as
+    `Desktop 2026.11.06 - 19.45.12.04.DVR (1).wmv` (157,024 KB). Both test .wmv files were
+    deleted afterwards; the original .mp4 is kept.
 
 ### Owner's machine notes
 - Notifications are disabled by Chris Titus Tech WinUtil:
@@ -182,23 +195,22 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - 2026-11-09: compress to a set size before FFmpeg is downloaded (`aecd928`); one MB unit
   (Q4, `c504236`); a finished file never replaces an existing one (Q5a, `3bdb5b0`); Q5b/Q5c
   recorded as deferred (`7d67d54`); old `deps` folder deleted (Q6); open questions answered.
+- Manual tests of the MB unit (`c504236`) and no-overwrite (`3bdb5b0`) passed on the owner's
+  machine (details above).
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
 ### IN PROGRESS
-- Nothing in progress in code. The build in `build/` (final HEAD of 2026-11-09) is waiting
-  for NEXT 1.
+- Nothing in progress in code. `build/` holds the build from `da1d3f1` (tested above; not
+  the final build).
 
 ### NEXT (in this order)
-1. Quick manual test of `c504236` (size box counts MB like Explorer: a target equal to the
-   size Explorer shows is refused, one less is accepted) and `3bdb5b0` (a file created under
-   the output name during a long job is kept; the result gets " (n)").
-2. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
+1. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
    owner's approval.
-3. Final build. No more builds after that.
-4. New VirusTotal scan and new Microsoft false-positive report on the final
+2. Final build. No more builds after that.
+3. New VirusTotal scan and new Microsoft false-positive report on the final
    `FalakSetup-1.0.0.exe`.
-5. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
+4. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
    see Q1 below for how).
 
 ### Rejected by the owner (do not implement)
