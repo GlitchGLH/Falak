@@ -9,7 +9,7 @@ Unicode true
 !define UninstKey "Software\Microsoft\Windows\CurrentVersion\Uninstall\Falak"
 
 Name "Falak"
-OutFile "${__FILEDIR__}/../../FalakSetup-1.0.0.exe"
+OutFile "${__FILEDIR__}\..\..\FalakSetup-1.0.0.exe"
 InstallDir "$LOCALAPPDATA\Programs\Falak"
 RequestExecutionLevel user
 ShowInstDetails show
@@ -27,13 +27,13 @@ VIAddVersionKey /LANG=1033 FileDescription "Falak installer"
 VIAddVersionKey /LANG=1033 LegalCopyright "(c) 2026 UncleGlitch"
 VIAddVersionKey /LANG=1033 OriginalFilename "FalakSetup-1.0.0.exe"
 
-!define MUI_ICON "${__FILEDIR__}/raha-nsis.ico"
-!define MUI_UNICON "${__FILEDIR__}/raha-nsis.ico"
+!define MUI_ICON "${__FILEDIR__}\raha-nsis.ico"
+!define MUI_UNICON "${__FILEDIR__}\raha-nsis.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\Falak.exe"
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "${__FILEDIR__}/license.txt"
+!insertmacro MUI_PAGE_LICENSE "${__FILEDIR__}\license.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 Page custom OptionsPage OptionsPageLeave
 !insertmacro MUI_PAGE_INSTFILES
@@ -126,8 +126,8 @@ Section Install
   !insertmacro CloseFalak
   !insertmacro DeleteOldHelperTask
   SetOutPath "$INSTDIR"
-  File "${__FILEDIR__}/Falak.exe"
-  File "${__FILEDIR__}/../THIRD_PARTY_LICENSES.txt"
+  File "${__FILEDIR__}\Falak.exe"
+  File "${__FILEDIR__}\..\THIRD_PARTY_LICENSES.txt"
   CreateShortCut "$SMPROGRAMS\Falak.lnk" "$INSTDIR\Falak.exe" "" "$INSTDIR\Falak.exe" 0
   ${If} $DesktopCk == 1
     CreateShortCut "$DESKTOP\Falak.lnk" "$INSTDIR\Falak.exe" "" "$INSTDIR\Falak.exe" 0

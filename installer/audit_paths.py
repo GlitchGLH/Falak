@@ -18,9 +18,13 @@ nsi = (Path(__file__).parent / "falak.nsi").read_text(encoding="utf-8")
 for m in re.finditer(r'\$(?:INSTDIR|SMPROGRAMS|DESKTOP|LOCALAPPDATA|TEMP|OUTDIR|STARTMENU|SMPROGRAMS)/', nsi):
     line_no = nsi.count("\n", 0, m.start()) + 1
     line = nsi.splitlines()[line_no - 1].strip()
-    # compile-time makensis asset paths (File "${__FILEDIR__}/...") are fine;
-    # runtime $VARIABLE/... paths are NOT.
     fails.append(f"line {line_no}: forward slash in runtime path: {line}")
+
+# 1b. Compile-time asset paths use backslashes too: makensis on Windows
+#     (3.13) reports File "${__FILEDIR__}/x" as "no files found".
+for m in re.finditer(r'\$\{__FILEDIR__\}/', nsi):
+    line_no = nsi.count("\n", 0, m.start()) + 1
+    fails.append(f"line {line_no}: forward slash after ${{__FILEDIR__}}: {nsi.splitlines()[line_no - 1].strip()}")
 
 # 2. Shortcuts must use the exact form: target, empty args, icon, index 0,
 #    and must come AFTER Falak.exe is copied (File line).
@@ -30,9 +34,11 @@ if want_smenu not in nsi:
     fails.append("missing exact Start Menu shortcut line:\n" + want_smenu)
 if want_desktop not in nsi:
     fails.append("missing exact Desktop shortcut line:\n" + want_desktop)
-file_line = '  File "${__FILEDIR__}/Falak.exe"'
+file_line = '  File "${__FILEDIR__}\\Falak.exe"'
 sc_line = nsi.find(want_smenu)
-if file_line in nsi and sc_line != -1 and nsi.find(file_line) > sc_line:
+if file_line not in nsi:
+    fails.append("missing exact line: " + file_line)
+elif sc_line != -1 and nsi.find(file_line) > sc_line:
     fails.append("shortcuts must be created AFTER Falak.exe is copied")
 
 # 3. Uninstaller must delete both shortcuts.
