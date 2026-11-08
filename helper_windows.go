@@ -138,7 +138,24 @@ func (a *App) launchHelper() bool {
 		uintptr(unsafe.Pointer(utf16("--keys"))), 0, 0)
 	logf("launching helper as administrator from %s: result %d", exe, r)
 	helperDeclined = r <= 32
+	if helperDeclined {
+		// "No" (or a failed start) turns the helper off, so the menu, the
+		// saved setting and the next start agree, and the offer is not
+		// shown again this session.
+		setUseHelper(false)
+		helperAsked = true
+		logf("helper not started; turned off")
+	}
 	return r > 32
+}
+
+// helperOn is what the tray menu shows: the helper is running, or was
+// started a moment ago and is still coming up (no flicker after "Yes").
+func helperOn() bool {
+	if !useHelperSetting() {
+		return false
+	}
+	return helperAlive() || (!helperDeclined && time.Since(helperLaunchedAt) < 5*time.Second)
 }
 
 // offerHelper runs (outside the poll loop) when a drag is seen but the mouse

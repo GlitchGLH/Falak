@@ -66,7 +66,7 @@ func (a *App) menuRows() []ui.MenuRow {
 		{ID: "theme", Icon: "moon", Title: T("Dark theme", "الثيم الداكن"), Sub: themeSub, SubBlue: true, Toggle: true, On: darkMode()},
 		{ID: "sound", Icon: "sound", Title: T("Wheel sounds", "أصوات العجلة"), Sub: T("Hover and drop sounds", "صوت عند التمرير والإفلات"), Toggle: true, On: soundEnabled},
 		{ID: "startup", Icon: "startup", Title: T("Start with Windows", "التشغيل مع بدء ويندوز"), Sub: T("Runs when you sign in", "يعمل عند تسجيل الدخول"), Toggle: true, On: startupEnabled()},
-		{ID: "helper", Icon: "shield", Title: T("Key-reading helper", "مساعد قراءة الأزرار"), Sub: T("Administrator", "بصلاحيات المسؤول"), Toggle: true, On: useHelperSetting()},
+		{ID: "helper", Icon: "shield", Title: T("Key-reading helper", "مساعد قراءة الأزرار"), Sub: T("Administrator", "بصلاحيات المسؤول"), Toggle: true, On: helperOn()},
 		{ID: "lang", Icon: "globe", Title: "العربية", Sub: T("Arabic interface", "واجهة عربية"), Toggle: true, On: arabic},
 		{ID: "help", Icon: "help", Title: T("How to use", "طريقة الاستخدام"), Footer: true},
 		{ID: "quit", Icon: "power", Title: T("Quit", "إنهاء"), Footer: true},
@@ -192,15 +192,17 @@ func (a *App) menuAction(id string) {
 	case "startup":
 		setStartup(!startupEnabled())
 	case "helper":
-		if useHelperSetting() {
+		// the toggle follows the helper's real state (helperOn): on means
+		// running, so a click turns it off; off (also after "No" on the
+		// administrator prompt) means a click starts it
+		if helperOn() {
 			setUseHelper(false) // the helper notices and exits within a second
 		} else {
 			setUseHelper(true)
-			if !helperAlive() {
-				hideMenu() // the administrator prompt takes the focus
-				a.launchHelper()
-				return
-			}
+			helperDeclined = false
+			hideMenu() // the administrator prompt takes the focus
+			a.launchHelper()
+			return
 		}
 	case "lang":
 		setLanguage(!arabic)
