@@ -107,6 +107,10 @@ type App struct {
 
 	lastPresented *image.RGBA // the last frame shown, for the close animation
 	closingPanel  bool        // the close animation is running
+
+	bgPlace   map[int]panelReq // where each background job's window was
+	donePanel bool             // the panel only says a background job is done
+	doneUntil time.Time        // when that "done" panel goes away
 }
 
 type panelReq struct {
@@ -126,7 +130,7 @@ var engineMu sync.Mutex
 var taskbarCreated uintptr // message sent when the taskbar (Explorer) restarts
 
 var app = &App{results: make(chan result, 32), thumbs: make(chan thumbMsg, 8),
-	cancels: map[int]context.CancelFunc{}, cancelled: map[int]bool{}}
+	cancels: map[int]context.CancelFunc{}, cancelled: map[int]bool{}, bgPlace: map[int]panelReq{}}
 
 func main() {
 	runtime.LockOSThread()
@@ -334,6 +338,7 @@ func overlayProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 				app.background++
 			}
 			app.panel, app.panelJob, app.pending, app.dragPanel = nil, 0, nil, false
+			app.donePanel = false
 			app.syncFlags()
 			ret = 0
 		}
@@ -483,13 +488,24 @@ func processOf(hwnd uintptr) string {
 // new drag can use the screen. The tray icon shows the progress and a
 // notification follows.
 func (a *App) panelToBackground() {
+	if a.donePanel { // only a "done" notice: a new drag simply closes it
+		a.hidePanel()
+		return
+	}
 	job := a.panelJob
+	var place panelReq
 	if a.pending != nil {
 		job = a.pending.job
+		place = *a.pending
 		a.pending = nil
+	} else if a.panel != nil {
+		place = panelReq{cx: a.winX + int32(a.panel.W/2), cy: a.winY + int32(a.panel.H/2), scale: a.panel.Scale}
 	}
 	if job == 0 {
 		return
+	}
+	if place.scale > 0 {
+		a.bgPlace[job] = place
 	}
 	logf("job %d continues in the background (new drag)", job)
 	a.background++
@@ -507,6 +523,7 @@ func (a *App) hidePanel() {
 		pReleaseCapture.Call()
 	}
 	a.panel, a.panelJob = nil, 0
+	a.donePanel = false
 	if a.wheel == nil {
 		a.stopTimer()
 	}
@@ -514,6 +531,10 @@ func (a *App) hidePanel() {
 
 // cancelPanel stops the job shown in the panel (the X button).
 func (a *App) cancelPanel() {
+	if a.donePanel {
+		a.hidePanel()
+		return
+	}
 	job := a.panelJob
 	if job == 0 {
 		return
@@ -563,6 +584,45 @@ func (a *App) showPanel() {
 	logf("progress window shown at %d,%d (%dx%d) in %v", x, y, pw, ph, time.Since(now).Round(time.Millisecond))
 }
 
+// donePanelFor is how long the progress window shows "Done" again for a job
+// that finished in the background.
+const donePanelFor = 2500 * time.Millisecond
+
+// showDonePanel briefly shows the progress window again, where the job's
+// window was, with a full bar and "Done" (Windows may silence the tray
+// notification). Never over the wheel or another progress window, never
+// taking the focus; the X or a new drag closes it.
+func (a *App) showDonePanel(place panelReq, title, line string) {
+	if a.wheel != nil || a.panel != nil || a.pending != nil {
+		logf("done window: not shown (the wheel or a progress window is on screen)")
+		return
+	}
+	pt := POINT{place.cx, place.cy}
+	mon, _, _ := pMonitorFromPoint.Call(uintptr(*(*uint64)(unsafe.Pointer(&pt))), MONITOR_DEFAULTTONEAREST)
+	mi := MONITORINFO{}
+	mi.CbSize = uint32(unsafe.Sizeof(mi))
+	pGetMonitorInfoW.Call(mon, uintptr(unsafe.Pointer(&mi)))
+	pw, ph := ui.PanelSize(place.scale)
+	x := clamp32(place.cx-int32(pw)/2, mi.RcWork.Left, mi.RcWork.Right-int32(pw))
+	y := clamp32(place.cy-int32(ph)/2, mi.RcWork.Top, mi.RcWork.Bottom-int32(ph))
+	now := time.Now()
+	a.panel = ui.NewPanelTheme(place.scale, nil, a.fonts, title, line, darkMode(), now)
+	a.panelJob, a.donePanel, a.doneUntil = 0, true, now.Add(donePanelFor)
+	a.panel.SetProgress(1)
+	a.winX, a.winY = x, y
+	a.setClickThrough(false)
+	a.present(a.panel.Render(now))
+	a.lastPanel = now
+	pSetWindowPos.Call(a.overlay, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOMOVE)
+	pShowWindow.Call(a.overlay, SW_SHOWNOACTIVATE)
+	if !a.timerOn {
+		pTimeBeginPeriod.Call(1)
+		a.startPump()
+		a.timerOn = true
+	}
+	logf("done window shown at %d,%d for %v", x, y, donePanelFor)
+}
+
 // movePanel follows the cursor while the window is dragged.
 func (a *App) movePanel() {
 	var cur POINT
@@ -586,7 +646,15 @@ func (a *App) tickPanel() {
 	var cur POINT
 	pGetCursorPos.Call(uintptr(unsafe.Pointer(&cur)))
 	a.panel.SetPointer(float64(cur.X-a.winX), float64(cur.Y-a.winY))
-	a.panel.SetProgress(jobProgressOf(a.panelJob))
+	if a.donePanel {
+		if now.After(a.doneUntil) {
+			a.hidePanel()
+			return
+		}
+		a.panel.SetProgress(1)
+	} else {
+		a.panel.SetProgress(jobProgressOf(a.panelJob))
+	}
 	// full rate while popping in, then ~60 fps is plenty for a bar
 	if !a.panel.Animating(now) && now.Sub(a.lastPanel) < 15*time.Millisecond {
 		return
@@ -1235,8 +1303,14 @@ func (a *App) handleResults() {
 				a.background--
 			}
 			a.setTrayTip(idleTip())
+			place, hadPlace := a.bgPlace[r.job]
+			delete(a.bgPlace, r.job)
 			if r.ok {
-				a.balloon(T("Done", "اكتمل التحويل"), fmt.Sprintf(T("%s — %d file(s)", "%s — %d ملف"), r.label, r.count), false)
+				title, line := T("Done", "اكتمل التحويل"), fmt.Sprintf(T("%s — %d file(s)", "%s — %d ملف"), r.label, r.count)
+				a.balloon(title, line, false)
+				if hadPlace {
+					a.showDonePanel(place, title, line)
+				}
 			} else {
 				a.showFailure(r.errText)
 			}
