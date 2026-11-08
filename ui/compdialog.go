@@ -80,6 +80,10 @@ func (d *CompressDialog) Size() (int, int) {
 	return int(math.Ceil((cdlgW + 2*PanelMargin) * d.Scale)), int(math.Ceil((cdlgH + 2*PanelMargin) * d.Scale))
 }
 
+// BytesPerMB is the megabyte the size box means: 1,048,576 bytes, the same
+// as File Explorer and the compression itself (conv.TargetTooSmall).
+const BytesPerMB = 1 << 20
+
 // MB parses the typed megabytes (0 = not a valid size yet).
 func (d *CompressDialog) MB() float64 {
 	v, err := strconv.ParseFloat(strings.TrimSpace(d.TargetMB), 64)
@@ -98,7 +102,7 @@ func (d *CompressDialog) StartActive() bool {
 	if mb <= 0 {
 		return false
 	}
-	if d.OriginalBytes > 0 && mb*1e6 >= d.OriginalBytes {
+	if d.OriginalBytes > 0 && mb*BytesPerMB >= d.OriginalBytes {
 		return false // the target is the original size or bigger
 	}
 	return true
@@ -108,8 +112,8 @@ func (d *CompressDialog) StartActive() bool {
 // turned on: 100 MB, or half the original (whole MB, at least 1) when the
 // original is 100 MB or smaller, so the offer is always below the original.
 func (d *CompressDialog) DefaultTargetMB() string {
-	if d.OriginalBytes > 0 && d.OriginalBytes <= 100e6 {
-		return strconv.Itoa(max(1, int(d.OriginalBytes/2/1e6)))
+	if d.OriginalBytes > 0 && d.OriginalBytes <= 100*BytesPerMB {
+		return strconv.Itoa(max(1, int(d.OriginalBytes/2/BytesPerMB)))
 	}
 	return "100"
 }
@@ -441,7 +445,7 @@ func (d *CompressDialog) Render() *image.RGBA {
 
 	// the red line under the box: the target-too-big hint, or an error
 	msg := d.Error
-	if d.Target && d.OriginalBytes > 0 && d.MB() > 0 && float64(d.MB())*1e6 >= d.OriginalBytes {
+	if d.Target && d.OriginalBytes > 0 && d.MB() > 0 && float64(d.MB())*BytesPerMB >= d.OriginalBytes {
 		msg = d.Labels.TargetTooBig
 	}
 	if msg != "" {

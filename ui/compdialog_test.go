@@ -61,10 +61,13 @@ func TestSizeBoxEditing(t *testing.T) {
 	}
 }
 
+// mib is one megabyte as File Explorer counts it.
+const mib = 1 << 20
+
 // TestSizeBoxRules: Compress runs only for a whole number > 0 that is
 // smaller than the original (unchanged rules).
 func TestSizeBoxRules(t *testing.T) {
-	d := sizeBox(130e6)
+	d := sizeBox(130 * mib)
 	d.Focus()
 	for _, c := range []struct {
 		typed  string
@@ -78,19 +81,40 @@ func TestSizeBoxRules(t *testing.T) {
 	}
 }
 
+// TestSizeBoxUnit: the size box counts MB like File Explorer (1,048,576
+// bytes). A file of 130,000,000 bytes shows as 124.0 MB, so 124 is not
+// smaller than the original and 123 is.
+func TestSizeBoxUnit(t *testing.T) {
+	if BytesPerMB != 1048576 {
+		t.Fatalf("BytesPerMB = %d, want 1048576", BytesPerMB)
+	}
+	d := sizeBox(130e6)
+	for _, c := range []struct {
+		typed  string
+		active bool
+	}{{"125", false}, {"124", false}, {"123", true}} {
+		d.Focus()
+		typeKeys(d, c.typed)
+		if got := d.StartActive(); got != c.active {
+			t.Errorf("%s MB of a 130,000,000-byte file: active=%v, want %v", c.typed, got, c.active)
+		}
+	}
+}
+
 // TestDefaultTargetMB: 100 MB for bigger files; half the original (whole
 // MB, at least 1) for files of 100 MB or less, so the offer can be used.
 func TestDefaultTargetMB(t *testing.T) {
 	for _, c := range []struct {
 		orig float64
 		want string
-	}{{0, "100"}, {766e6, "100"}, {130e6, "100"}, {100.5e6, "100"}, {100e6, "50"}, {61e6, "30"}, {3e6, "1"}, {1.5e6, "1"}} {
+	}{{0, "100"}, {766 * mib, "100"}, {130 * mib, "100"}, {100.5 * mib, "100"}, {100 * mib, "50"},
+		{61 * mib, "30"}, {3 * mib, "1"}, {1.5 * mib, "1"}, {100e6, "47"}} {
 		d := &CompressDialog{OriginalBytes: c.orig}
 		if got := d.DefaultTargetMB(); got != c.want {
-			t.Errorf("original %.1f MB: default %s, want %s", c.orig/1e6, got, c.want)
+			t.Errorf("original %.1f MB: default %s, want %s", c.orig/mib, got, c.want)
 		}
-		if c.orig >= 3e6 && !sizeBox(c.orig).StartActive() {
-			t.Errorf("original %.1f MB: the default %s MB cannot be used", c.orig/1e6, c.want)
+		if c.orig >= 3*mib && !sizeBox(c.orig).StartActive() {
+			t.Errorf("original %.1f MB: the default %s MB cannot be used", c.orig/mib, c.want)
 		}
 	}
 }
