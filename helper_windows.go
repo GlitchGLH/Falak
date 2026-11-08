@@ -93,6 +93,7 @@ var (
 	helperMask  uint32
 	helperSeen  time.Time
 	helperAsked bool
+	helperHint  bool // the "Desktop drags need the helper" notice was shown this session
 )
 
 func helperAlive() bool { return time.Since(helperSeen) < time.Second }
@@ -174,6 +175,9 @@ func (a *App) offerHelper() {
 		return
 	}
 	if helperAsked {
+		// Already asked (or Windows' prompt was refused): never ask again,
+		// but say once per session why the wheel can't stay.
+		a.showHelperHint()
 		return
 	}
 	helperAsked = true
@@ -189,6 +193,20 @@ func (a *App) offerHelper() {
 		setUseHelper(true)
 		a.launchHelper()
 	}
+}
+
+// showHelperHint tells the user, once per session, why a drag from the
+// desktop shows no wheel while the helper is off. A tray notification only:
+// it never shows Windows' administrator prompt.
+func (a *App) showHelperHint() {
+	if helperHint || helperAlive() || useHelperSetting() {
+		return
+	}
+	helperHint = true
+	logf("desktop drag without the helper: showing the hint (once per session)")
+	a.balloon(T("Desktop drags need the helper", "السحب من سطح المكتب يحتاج المساعد"),
+		T("Falak can't read the Shift key when dragging from the desktop unless the Key-reading helper is on. Turn it on from the Falak icon next to the clock.",
+			"لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب إلا بتشغيل «مساعد قراءة الأزرار». شغّله من أيقونة «فلك» بجانب الساعة."), false)
 }
 
 // relaunchNormal restarts Falak at the normal level when it was started as
