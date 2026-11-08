@@ -68,6 +68,25 @@ code = "\n".join(l for l in nsi.splitlines() if not l.lstrip().startswith((";", 
 if re.search(r'powershell', code, re.IGNORECASE):
     fails.append("installer must not run PowerShell")
 
+# 8. The portable zip holds exactly Falak.exe, README.txt and
+#    THIRD_PARTY_LICENSES.txt: the build script's list, and the built zip
+#    when there is one.
+import zipfile
+PORTABLE = {"Falak.exe", "README.txt", "THIRD_PARTY_LICENSES.txt"}
+here = Path(__file__).parent
+mp = (here / "make_portable.py").read_text(encoding="utf-8")
+listed = set(re.findall(r'^\s*"([^"]+)":\s*\w', mp.split("FILES = {", 1)[-1].split("}", 1)[0], re.MULTILINE))
+if listed != PORTABLE:
+    fails.append(f"make_portable.py FILES must be exactly {sorted(PORTABLE)}, got {sorted(listed)}")
+if not (here / "portable" / "README.txt").is_file():
+    fails.append("installer/portable/README.txt is missing")
+built = here.parent / "build" / "Falak-1.0.0-portable.zip"
+if built.is_file():
+    with zipfile.ZipFile(built) as z:
+        names = z.namelist()
+    if sorted(names) != sorted(PORTABLE):
+        fails.append(f"build/Falak-1.0.0-portable.zip must hold exactly {sorted(PORTABLE)}, got {names}")
+
 if fails:
     print("NSI PATH AUDIT FAILED:")
     for f in fails:

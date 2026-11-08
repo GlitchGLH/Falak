@@ -144,7 +144,8 @@ FFmpeg `libx265` encodes HEVC, `heif.go` writes the HEIF container itself) · `i
 + Start Menu shortcuts with explicit icon; ships THIRD_PARTY_LICENSES.txt; `BrandingText
 "Falak 1.0.0 · By UncleGlitch"`; OutFile two levels above `installer/`) · `license.txt` ·
 `raha.ico`/`raha-nsis.ico` · `audit_paths.py` (static NSIS path audit — part of the gate) ·
-`verify-install.ps1` (real-Windows runtime verification) · `Falak.exe` (gitignored build drop).
+`verify-install.ps1` (real-Windows runtime verification) · `Falak.exe` (gitignored build drop) ·
+`make_portable.py` + `portable/README.txt` (portable zip, see Section 3).
 Compile-time asset paths use backslashes (`${__FILEDIR__}\...`): makensis on Windows does not
 find `${__FILEDIR__}/...` files.
 
@@ -189,8 +190,11 @@ config — **not needed for 1.0.0**.
 `THIRD_PARTY_LICENSES.txt` in `build/nsis/`, run
 `makensis -INPUTCHARSET UTF8 <abs path>\build\nsis\installer\falak.nsi` (OutFile two levels up
 = `build/FalakSetup-1.0.0.exe`), then delete `build/nsis`.
-**Falak-1.0.0-portable.zip**: zip exactly `Falak.exe` + `README.txt` + `THIRD_PARTY_LICENSES.txt`
-(README.txt is the short portable read-me, regenerated in-session; content in the delivered zip).
+**Falak-1.0.0-portable.zip** (into `build/` only): after building `build/Falak.exe`, run
+`py installer/make_portable.py`. It zips exactly `Falak.exe` + `README.txt`
+(`installer/portable/README.txt`, owner's EN+AR text — Arabic rule applies) +
+`THIRD_PARTY_LICENSES.txt` with a fixed timestamp (same inputs → same zip);
+`audit_paths.py` checks the script's list and, when present, the built zip.
 **SHA256SUMS.txt**: `sha256sum FalakSetup-1.0.0.exe Falak-1.0.0-portable.zip > SHA256SUMS.txt`.
 **github-upload-1/2.zip**: copy the repo's upload file set into `github-upload/` (docs/ included,
 flat layout, **never HANDOVER.md / CLAUDE_HANDOVER.md**), zip alphabetically split into two
