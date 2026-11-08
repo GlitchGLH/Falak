@@ -9,7 +9,7 @@ commands, decision history and current state.
   call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` /
   `soundOn`. No fixes, no "improvements". **Never add, remove or move a sound
   call**, and no change may make a sound play where none plays today. If a
-  sound task comes up, restore from commit `8816700`, never edit.
+  sound task comes up, restore from commit `e29e934`, never edit.
 - **Arabic text**: no new or changed Arabic text without the owner's exact
   approved text (code, installer, README, README.txt). Show every changed
   Arabic line in full, before and after. If an Arabic sentence becomes

@@ -58,7 +58,7 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
 - All files UTF-8 with LF line endings.
 - Never touch `Falak-1.0.0-release` (Microsoft false-positive review pending); builds go to `build/` only.
 - Never touch any Arabic string unless the exact replacement text is given; show every changed/new Arabic line in full.
-- **Never modify the sound code.** `sound_windows.go`, `res/*.wav` and every call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` / `soundOn` are frozen verbatim at commit `4bd539b` (the tested-good build; same files as this repo's first commit `8816700`). No redesign, no "improvements", no volume changes; if a sound task ever comes up again, restore from `8816700` instead of editing.
+- **Never modify the sound code.** `sound_windows.go`, `res/*.wav` and every call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` / `soundOn` are frozen verbatim at commit `4bd539b` (the tested-good build; same files as this repo's first commit `e29e934`). No redesign, no "improvements", no volume changes; if a sound task ever comes up again, restore from `e29e934` instead of editing.
 
 ## State on 2026-11-07 (before the 2026-11-08 review; see CLAUDE_HANDOVER.md Sections 6 and 8 for what changed since)
 - Final head: `1.0.0: restore sounds from 4bd539b` — the sound code (engine, `res/`, and every call site, incl. the menu sound toggle playing `playHover()` at its old level) is byte-identical to `4bd539b`; `confirmPCM` / `playConfirm` are gone.
