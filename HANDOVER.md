@@ -45,6 +45,9 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
 | `HKCU\...\AppCompatFlags\Layers` | only ever *removed* (Run-as-admin marks on `\falak.exe`) |
 | install folder: the installer's `InstallLocation` (HKCU Uninstall\Falak) when Falak.exe is there, else `%LOCALAPPDATA%\Programs\Falak` | the one `Falak.exe` (`.new`/`.old` transient); self-copy, Run value and helper all use it. A second copy that earlier builds left in the default folder is removed by the app, the installer and the uninstaller |
 | `%LOCALAPPDATA%\Falak` | `falak.log` (+`.old`), crash reports |
+| `%LOCALAPPDATA%\Falak\temp-folders.txt` | folders that got a hidden `.falak-tmp`; at start Falak removes entries there named `<UnixNano>-<n>…` older than 10 min (interrupted jobs), never other files |
+| `<folder of a converted file>\.falak-tmp` | hidden work folder; removed when empty |
+| `%TEMP%\falak-pass-*`, `%TEMP%\falak-palette-*.png` | two-pass logs and GIF palettes during a job; stale ones removed at start |
 | Scheduled task `Falak\KeysHelper` | no longer created (the helper now starts through a UAC prompt each time); a task left by earlier builds is deleted by the elevated helper, the installer and the uninstaller |
 | `%LOCALAPPDATA%\Falak\tools` | downloaded engines: FFmpeg, PDFium, qpdf, resvg (pinned; each folder has `falak-engine.txt`). Earlier builds used `%LOCALAPPDATA%\Programs\Falak\tools`; the app and the uninstaller remove it |
 | session-only | mutex `Local\FalakFileWheel`; reads `Themes\Personalize\AppsUseLightTheme`; no shell extensions / file associations |

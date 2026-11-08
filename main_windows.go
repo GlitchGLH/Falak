@@ -189,6 +189,10 @@ func main() {
 	// engines are downloaded again anyway).
 	conv.ToolsDir = filepath.Join(os.Getenv("LOCALAPPDATA"), "Falak", "tools")
 	go os.RemoveAll(filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Falak", "tools"))
+	// Folders that got a .falak-tmp are recorded; at start (no job of ours
+	// runs yet) what an interrupted job left there is removed.
+	conv.TempRecord = filepath.Join(os.Getenv("LOCALAPPDATA"), "Falak", "temp-folders.txt")
+	go conv.CleanStaleTemp(10 * time.Minute)
 	conv.PrepareCmd = func(c *exec.Cmd) {
 		c.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
 	}
