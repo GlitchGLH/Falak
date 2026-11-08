@@ -41,7 +41,7 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | value `Falak` = `"<install>\Falak.exe" --startup` (legacy value `Raha` is deleted by the app) |
 | `HKCU\...\Explorer\StartupApproved\Run` | value `Falak` (startup enable marker) |
 | `HKCU\...\AppCompatFlags\Layers` | only ever *removed* (Run-as-admin marks on `\falak.exe`) |
-| `%LOCALAPPDATA%\Programs\Falak` | self-installed copy `Falak.exe` (`.new`/`.old` transient) |
+| install folder: the installer's `InstallLocation` (HKCU Uninstall\Falak) when Falak.exe is there, else `%LOCALAPPDATA%\Programs\Falak` | the one `Falak.exe` (`.new`/`.old` transient); self-copy, Run value and helper all use it. A second copy that earlier builds left in the default folder is removed by the app, the installer and the uninstaller |
 | `%LOCALAPPDATA%\Falak` | `falak.log` (+`.old`), crash reports |
 | Scheduled task `Falak\KeysHelper` | no longer created (the helper now starts through a UAC prompt each time); a task left by earlier builds is deleted by the elevated helper, the installer and the uninstaller |
 | `%LOCALAPPDATA%\Falak\tools` | downloaded engines: FFmpeg, PDFium, qpdf, resvg (pinned; each folder has `falak-engine.txt`). Earlier builds used `%LOCALAPPDATA%\Programs\Falak\tools`; the app and the uninstaller remove it |

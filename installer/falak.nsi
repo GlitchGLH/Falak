@@ -12,6 +12,8 @@ Unicode true
 Name "Falak"
 OutFile "${__FILEDIR__}\..\..\FalakSetup-1.0.0.exe"
 InstallDir "$LOCALAPPDATA\Programs\Falak"
+; an update offers the folder Falak is already installed in
+InstallDirRegKey HKCU "${UninstKey}" "InstallLocation"
 RequestExecutionLevel user
 ShowInstDetails show
 ShowUnInstDetails show
@@ -110,6 +112,19 @@ Var StartupHnd
   ${EndIf}
 !macroend
 
+; Earlier builds also copied Falak.exe to the default folder when the user
+; had chosen another one, so two copies existed (the startup entry used the
+; default one). Remove that second copy; never touches $INSTDIR itself.
+!macro RemoveDefaultCopy
+  ${If} "$INSTDIR" != "$LOCALAPPDATA\Programs\Falak"
+    Delete "$LOCALAPPDATA\Programs\Falak\Falak.exe"
+    Delete "$LOCALAPPDATA\Programs\Falak\Falak.exe.new"
+    Delete "$LOCALAPPDATA\Programs\Falak\Falak.exe.old"
+    RMDir /r "$LOCALAPPDATA\Programs\Falak\tools"
+    RMDir "$LOCALAPPDATA\Programs\Falak"
+  ${EndIf}
+!macroend
+
 Function .onInit
   SetShellVarContext current
   StrCpy $DesktopCk 0
@@ -141,6 +156,7 @@ FunctionEnd
 Section Install
   !insertmacro CloseFalak
   !insertmacro DeleteOldHelperTask
+  !insertmacro RemoveDefaultCopy
   SetOutPath "$INSTDIR"
   File "${__FILEDIR__}\Falak.exe"
   File "${__FILEDIR__}\..\THIRD_PARTY_LICENSES.txt"
@@ -206,6 +222,7 @@ Section Uninstall
   ; Engines: now in $LOCALAPPDATA\Falak\tools (removed below with the rest of
   ; Falak's data); earlier builds kept them in the default install folder.
   RMDir /r "$LOCALAPPDATA\Programs\Falak\tools"
+  !insertmacro RemoveDefaultCopy
   ; Only the files this installer put in $INSTDIR (plus Falak's own
   ; self-update leftovers), never the whole folder: the user may have picked
   ; a folder that holds other files. The folder goes only if it is now empty.

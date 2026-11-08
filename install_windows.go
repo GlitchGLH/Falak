@@ -8,11 +8,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
 )
 
 // Falak copies itself to %LOCALAPPDATA%\Programs\Falak\Falak.exe and runs
@@ -20,8 +22,40 @@ import (
 // temporary folder that is cleaned up while it runs, after which Windows
 // cannot start the administrator helper or the "start with Windows" entry.
 
-func installDir() string {
+// defaultInstallDir is used when Falak was not installed by the installer
+// (portable copy) or its install folder is gone.
+func defaultInstallDir() string {
 	return filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Falak")
+}
+
+const uninstallKeyPath = `Software\Microsoft\Windows\CurrentVersion\Uninstall\Falak`
+
+var (
+	installDirOnce sync.Once
+	installDirPath string
+)
+
+// installDir is the folder the installer put Falak in (its InstallLocation,
+// when Falak.exe is there), else the default. With one install folder the
+// self-copy, the startup entry, the helper and the uninstaller all use the
+// same Falak.exe, also when the user chose a folder of their own.
+func installDir() string {
+	installDirOnce.Do(func() {
+		installDirPath = defaultInstallDir()
+		k, err := registry.OpenKey(registry.CURRENT_USER, uninstallKeyPath, registry.QUERY_VALUE)
+		if err != nil {
+			return
+		}
+		defer k.Close()
+		v, _, err := k.GetStringValue("InstallLocation")
+		if err != nil || v == "" {
+			return
+		}
+		if _, err := os.Stat(filepath.Join(v, "Falak.exe")); err == nil {
+			installDirPath = filepath.Clean(v)
+		}
+	})
+	return installDirPath
 }
 
 func installedExe() string { return filepath.Join(installDir(), "Falak.exe") }
@@ -141,8 +175,18 @@ func copyFile(src, dst string) error {
 	return os.Rename(tmp, dst)
 }
 
-// cleanOldCopies removes copies that were moved aside during an update.
-func cleanOldCopies() { os.Remove(installedExe() + ".old") }
+// cleanOldCopies removes copies that were moved aside during an update, and
+// the second copy earlier builds made in the default folder when Falak was
+// installed somewhere else.
+func cleanOldCopies() {
+	os.Remove(installedExe() + ".old")
+	if def := defaultInstallDir(); !strings.EqualFold(filepath.Clean(installDir()), filepath.Clean(def)) {
+		for _, n := range []string{"Falak.exe", "Falak.exe.new", "Falak.exe.old"} {
+			os.Remove(filepath.Join(def, n))
+		}
+		os.Remove(def) // only when empty
+	}
+}
 
 const helperTask = `Falak\KeysHelper`
 
