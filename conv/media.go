@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // ---------- categories ----------
@@ -398,9 +399,56 @@ func ffmpegRaw(ctx context.Context, pre []string, src, tmp string, args []string
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), lastLine(stderr.String()))
+		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), ffmpegError(err, full, stderr.String()))
 	}
 	return nil
+}
+
+// Logf receives diagnostics; the Windows app points it at falak.log.
+var Logf = func(format string, args ...any) {}
+
+// ffmpegError logs a failed FFmpeg run (its arguments and the last lines of
+// its error output) and returns the line to show: the most specific error
+// line, not FFmpeg's closing "Conversion failed!", which says nothing.
+func ffmpegError(err error, args []string, stderr string) string {
+	Logf("ffmpeg failed (%v)\n  args: %q\n  last stderr lines:\n%s", err, args, indentTail(stderr, 15))
+	lines := strings.Split(strings.TrimSpace(stderr), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		l := strings.TrimSpace(lines[i])
+		if l == "" || l == "Conversion failed!" {
+			continue
+		}
+		return clip(l, 160)
+	}
+	if err != nil {
+		return clip(err.Error(), 160)
+	}
+	return lastLine("")
+}
+
+// indentTail returns the last n non-empty lines of s, indented for the log.
+func indentTail(s string, n int) string {
+	var keep []string
+	for _, l := range strings.Split(strings.ReplaceAll(s, "\r", ""), "\n") {
+		if strings.TrimSpace(l) != "" {
+			keep = append(keep, "    "+l)
+		}
+	}
+	if len(keep) > n {
+		keep = keep[len(keep)-n:]
+	}
+	return strings.Join(keep, "\n")
+}
+
+// clip shortens s to at most n bytes without cutting a character in half.
+func clip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 func clamp01(v float64) float64 {
@@ -417,10 +465,7 @@ func lastLine(s string) string {
 	lines := strings.Split(strings.TrimSpace(s), "\n")
 	for i := len(lines) - 1; i >= 0; i-- {
 		if l := strings.TrimSpace(lines[i]); l != "" {
-			if len(l) > 160 {
-				l = l[:160]
-			}
-			return l
+			return clip(l, 160)
 		}
 	}
 	return tr("Unknown error", "خطأ غير معروف")
@@ -654,7 +699,7 @@ func gifPalettePass(ctx context.Context, src, pal, vf, nullDev string, duration 
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), lastLine(stderr.String()))
+		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), ffmpegError(err, full, stderr.String()))
 	}
 	return nil
 }
@@ -674,11 +719,16 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	dst := uniquePath(path, "-compressed", ".mp4")
 	tmp := tempFor(dst)
 	defer dropTemp(tmp)
-	passlog := tmp + "-pass"
-	// FFmpeg names its logs <passlog>-<stream>.log(.mbtree)(.temp); remove
-	// every one of them on any exit (done, failed or cancelled), before
-	// dropTemp runs, so the hidden .falak-tmp folder can go away.
-	defer removePassLogs(passlog)
+	// The two-pass logs (<passlog>-<stream>.log(.mbtree), ~35 MB) go to a
+	// private folder in the system temp folder, never next to the user's
+	// video: folders watched by other programs (NVIDIA's capture folder)
+	// make x264's end-of-pass rename fail. Removed on every exit.
+	passDir, err := os.MkdirTemp("", passDirPrefix)
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(passDir)
+	passlog := filepath.Join(passDir, "pass")
 	nullDev := "/dev/null"
 	if runtime.GOOS == "windows" {
 		nullDev = "NUL"
@@ -695,6 +745,10 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	}); err != nil {
 		return "", err
 	}
+	if err := completePassLogs(passlog, 5*time.Second); err != nil {
+		Logf("two-pass: %v", err)
+		return "", fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), clip(err.Error(), 160))
+	}
 	// pass 2: the real encode, into the temporary file
 	// -pass:v / -passlogfile:v: only the video is two-pass. A plain "-pass 2"
 	// also applies to the AAC sound in current FFmpeg builds, which then looks
@@ -708,23 +762,47 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	}); err != nil {
 		return "", err
 	}
-	removePassLogs(passlog)
 	return dst, finishTemp(tmp, dst)
 }
 
-// removePassLogs deletes the two-pass log files that start with passlog.
-// (A directory listing, not filepath.Glob: folder names may contain '['.)
-func removePassLogs(passlog string) {
+// passDirPrefix names the private folders for two-pass logs in the system
+// temp folder (CleanStaleTemp removes old ones).
+const passDirPrefix = "falak-pass-"
+
+// completePassLogs finishes what x264 should have done at the end of pass 1.
+// x264 writes its statistics to "<log>.temp" files and renames them when the
+// pass ends; when another program has just opened the new file (a folder
+// watcher, an antivirus scan) the rename fails, x264 only reports it and
+// FFmpeg still exits successfully, so pass 2 stops with "ratecontrol_init:
+// can't open stats file". Every "<passlog>….temp" left is renamed here,
+// retrying while the other program holds it.
+func completePassLogs(passlog string, wait time.Duration) error {
 	dir, prefix := filepath.Dir(passlog), filepath.Base(passlog)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return
+		return err
 	}
 	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), prefix) {
-			os.Remove(filepath.Join(dir, e.Name()))
+		name := e.Name()
+		if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ".temp") {
+			continue
 		}
+		from := filepath.Join(dir, name)
+		to := strings.TrimSuffix(from, ".temp")
+		deadline := time.Now().Add(wait)
+		for {
+			err = os.Rename(from, to)
+			if err == nil || time.Now().After(deadline) {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		if err != nil {
+			return fmt.Errorf("pass-1 log %s: %w", name, err)
+		}
+		Logf("two-pass: x264 could not rename %s; renamed it", name)
 	}
+	return nil
 }
 
 // ---------- audio ----------

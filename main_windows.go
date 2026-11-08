@@ -180,6 +180,7 @@ func main() {
 	warmUp(app.fonts) // synchronous: font faces are not safe to share across goroutines
 	soundEnabled = soundOn()
 	conv.HidePath = hidePath
+	conv.Logf = logf
 	conv.RarHint = winrarFromRegistry
 	// Engines live in Falak's own data folder (removed whole by the
 	// uninstaller), never in the install folder, which the user may have
@@ -1213,7 +1214,7 @@ func (a *App) handleResults() {
 				a.hidePanel()
 				a.setTrayTip(idleTip())
 				if !r.ok {
-					a.balloon(T("Conversion failed", "تعذّر التحويل"), r.errText, true)
+					a.showFailure(r.errText)
 				}
 				continue
 			}
@@ -1224,12 +1225,23 @@ func (a *App) handleResults() {
 			if r.ok {
 				a.balloon(T("Done", "اكتمل التحويل"), fmt.Sprintf(T("%s — %d file(s)", "%s — %d ملف"), r.label, r.count), false)
 			} else {
-				a.balloon(T("Conversion failed", "تعذّر التحويل"), r.errText, true)
+				a.showFailure(r.errText)
 			}
 		default:
 			return
 		}
 	}
+}
+
+// showFailure tells the user a job failed. A tray notification alone can be
+// silenced by Windows (Do not disturb, notifications off), which made a
+// failed job look like the progress window just vanished, so a message box
+// is shown as well. It runs on its own goroutine so the wheel, the tray and
+// other jobs keep working while it is open.
+func (a *App) showFailure(errText string) {
+	title := T("Conversion failed", "تعذّر التحويل")
+	a.balloon(title, errText, true)
+	go messageBox(title+"\n\n"+errText, MB_ICONERROR)
 }
 
 // applicable keeps the files for which the option id exists and is enabled.

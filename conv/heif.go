@@ -86,7 +86,7 @@ func x265Still(pix []byte, pixFmt string, w, h int) ([]byte, error) {
 	var out, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &stderr
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf(tr("HEIC encoding failed: %s", "فشل ترميز HEIC: %s"), lastLine(stderr.String()))
+		return nil, fmt.Errorf(tr("HEIC encoding failed: %s", "فشل ترميز HEIC: %s"), ffmpegError(err, args, stderr.String()))
 	}
 	return out.Bytes(), nil
 }
