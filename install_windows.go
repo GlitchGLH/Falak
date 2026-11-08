@@ -152,17 +152,16 @@ func hiddenCmd(name string, args ...string) *exec.Cmd {
 	return c
 }
 
-// registerHelperTask is run by the elevated helper: it creates a scheduled
-// task with highest privileges so later starts need no confirmation.
-func registerHelperTask() {
-	out, err := hiddenCmd("schtasks", "/Create", "/F", "/TN", helperTask,
-		"/TR", `"`+installedExe()+`" --keys`, "/SC", "ONCE", "/ST", "00:00", "/RL", "HIGHEST").CombinedOutput()
-	logf("register helper task: err=%v %s", err, strings.TrimSpace(string(out)))
-}
-
-// startHelperTask starts the helper through the scheduled task (no prompt).
-func startHelperTask() bool {
-	out, err := hiddenCmd("schtasks", "/Run", "/TN", helperTask).CombinedOutput()
-	logf("start helper task: err=%v %s", err, strings.TrimSpace(string(out)))
-	return err == nil
+// deleteOldHelperTask is run by the elevated helper. Earlier builds created
+// a scheduled task with highest privileges that started the helper without
+// a prompt; it pointed at a file the user (and any program they run) can
+// replace, so it is removed. The task file is checked first, so schtasks
+// only runs when there is something to delete.
+func deleteOldHelperTask() {
+	file := filepath.Join(os.Getenv("SystemRoot"), "System32", "Tasks", "Falak", "KeysHelper")
+	if _, err := os.Stat(file); err != nil {
+		return
+	}
+	out, err := hiddenCmd("schtasks", "/Delete", "/TN", helperTask, "/F").CombinedOutput()
+	logf("delete old helper task: err=%v %s", err, strings.TrimSpace(string(out)))
 }

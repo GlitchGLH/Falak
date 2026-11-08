@@ -39,8 +39,10 @@ repo **github.com/GlitchGLH/Falak** (public).
 - **How-to-use card**: an in-app help card in the app's own style (no browser).
 - **GIF limit**: animated-GIF output refuses videos longer than 10 s
   («صيغة GIF تدعم الفيديو حتى 10 ثوانٍ فقط») and reports two-pass progress (0 → 0.4 palette pass → 1.0).
-- **Key-reading helper**: opt-in elevated helper (scheduled task `Falak\KeysHelper` via
-  `schtasks`) so key state can be read while an elevated window has focus.
+- **Key-reading helper**: opt-in elevated helper so key state can be read while an elevated
+  window has focus. It starts through a **UAC prompt every time** (`ShellExecute "runas"`);
+  the old scheduled task `Falak\KeysHelper` (silent elevation of a user-writable exe) is gone
+  and is deleted by the elevated helper, the installer and the uninstaller when found.
 
 ### Conversions per format (see README.md's table for the authoritative matrix)
 - **Images**: between JPG, PNG, WEBP, GIF, AVIF, TIFF, BMP, ICO, HEIC (input and output), plus **SVG**

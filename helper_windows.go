@@ -41,7 +41,7 @@ func runKeysHelper(arg string) {
 	}
 	logf("helper started (level %s)", ilName(selfIntegrity()))
 	if selfIntegrity() >= ilHigh {
-		registerHelperTask()
+		deleteOldHelperTask()
 	}
 	parent := findMainWindow()
 	lost := time.Now()
@@ -120,13 +120,16 @@ func setUseHelper(on bool) {
 	}
 }
 
-var helperLaunchedAt time.Time
+var (
+	helperLaunchedAt time.Time
+	helperDeclined   bool // the last administrator prompt was refused or failed
+)
 
+// launchHelper starts the helper as administrator. Windows asks for approval
+// every time (no scheduled task: that let any program start code from this
+// user-writable folder as administrator without asking).
 func (a *App) launchHelper() bool {
 	helperLaunchedAt = time.Now()
-	if startHelperTask() {
-		return true
-	}
 	exe := installedExe()
 	if _, err := os.Stat(exe); err != nil {
 		exe, _ = os.Executable()
@@ -134,6 +137,7 @@ func (a *App) launchHelper() bool {
 	r, _, _ := pShellExecuteW.Call(0, uintptr(unsafe.Pointer(utf16("runas"))), uintptr(unsafe.Pointer(utf16(exe))),
 		uintptr(unsafe.Pointer(utf16("--keys"))), 0, 0)
 	logf("launching helper as administrator from %s: result %d", exe, r)
+	helperDeclined = r <= 32
 	return r > 32
 }
 
@@ -144,8 +148,10 @@ func (a *App) offerHelper() {
 		return
 	}
 	if useHelperSetting() {
-		// Enabled but not running (e.g. it failed to start): retry quietly.
-		if time.Since(helperLaunchedAt) > 20*time.Second {
+		// Enabled but not running (e.g. it exited): retry, at most every
+		// 20 s. Not after a refused prompt, so a "No" is never asked again
+		// on every drag; the menu toggle starts it again.
+		if !helperDeclined && time.Since(helperLaunchedAt) > 20*time.Second {
 			a.launchHelper()
 		}
 		return

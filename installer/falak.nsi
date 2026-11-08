@@ -78,6 +78,22 @@ Var StartupHnd
   Sleep 500
 !macroend
 
+; Earlier builds created the scheduled task Falak\KeysHelper, which started
+; Falak.exe as administrator without asking. Remove it on install and on
+; uninstall. If Windows refuses (the task was created as administrator), it
+; is deleted through one administrator prompt; nothing is asked otherwise.
+!macro DeleteOldHelperTask
+  nsExec::Exec 'schtasks /Query /TN "Falak\KeysHelper"'
+  Pop $0
+  ${If} $0 == 0
+    nsExec::Exec 'schtasks /Delete /TN "Falak\KeysHelper" /F'
+    Pop $0
+    ${If} $0 != 0
+      ExecShellWait "runas" "$SYSDIR\schtasks.exe" '/Delete /TN "Falak\KeysHelper" /F' SW_HIDE
+    ${EndIf}
+  ${EndIf}
+!macroend
+
 Function .onInit
   SetShellVarContext current
   StrCpy $DesktopCk 0
@@ -108,6 +124,7 @@ FunctionEnd
 
 Section Install
   !insertmacro CloseFalak
+  !insertmacro DeleteOldHelperTask
   SetOutPath "$INSTDIR"
   File "${__FILEDIR__}/Falak.exe"
   File "${__FILEDIR__}/../THIRD_PARTY_LICENSES.txt"
@@ -156,8 +173,7 @@ Section Uninstall
   nsExec::Exec 'powershell -NoProfile -ExecutionPolicy Bypass -File "$TEMP\falak-cleanup.ps1"'
   Pop $0
   Delete "$TEMP\falak-cleanup.ps1"
-  nsExec::Exec 'schtasks /Delete /TN "Falak\KeysHelper" /F'
-  Pop $0
+  !insertmacro DeleteOldHelperTask
   Delete "$SMPROGRAMS\Falak.lnk"
   Delete "$DESKTOP\Falak.lnk"
   RMDir "$SMPROGRAMS"

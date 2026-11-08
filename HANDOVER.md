@@ -43,7 +43,7 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
 | `HKCU\...\AppCompatFlags\Layers` | only ever *removed* (Run-as-admin marks on `\falak.exe`) |
 | `%LOCALAPPDATA%\Programs\Falak` | self-installed copy `Falak.exe` (`.new`/`.old` transient) |
 | `%LOCALAPPDATA%\Falak` | `falak.log` (+`.old`), crash reports |
-| Scheduled task `Falak\KeysHelper` | created via `schtasks` only by the opt-in elevated key helper |
+| Scheduled task `Falak\KeysHelper` | no longer created (the helper now starts through a UAC prompt each time); a task left by earlier builds is deleted by the elevated helper, the installer and the uninstaller |
 | `%TEMP%\falak-tools` | downloaded engines: FFmpeg, PDFium, qpdf, resvg |
 | session-only | mutex `Local\FalakFileWheel`; reads `Themes\Personalize\AppsUseLightTheme`; no shell extensions / file associations |
 
