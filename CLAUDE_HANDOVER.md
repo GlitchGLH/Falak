@@ -3,9 +3,10 @@
 **READ THIS FIRST (new session):** You are taking over Falak, a finished, released-quality
 Windows drag-and-drop file converter, at version **1.0.0**. Two things are in flight and
 must not be disturbed: a **Microsoft antivirus false-positive review** and a **not-yet-published
-GitHub release**. **Do not rebuild any binary** — the shipped hashes are under review.
-Everything else (code review, fixes, new tasks, screenshots, docs) proceeds normally
-under the rules at the bottom of this file.
+GitHub release**. **Never touch `Falak-1.0.0-release`** (the shipped binaries whose hashes
+are under review). New builds are allowed but go to `build/` only (gitignored), never over
+the release files. Everything else (code review, fixes, new tasks, screenshots, docs)
+proceeds normally under the rules in Section 4 and `CLAUDE.md`.
 
 ---
 
@@ -91,14 +92,15 @@ mono 16-bit PCM 48 kHz) played through **one persistent winmm `waveOut` stream**
 small mixer (`sound_windows.go`) — hover loops softly while the wheel is visible
 (`soundKeepAlive`), appear/drop are one-shots. **Do not touch any of it** (Section 5).
 
-## 2. Full file map (110 tracked files)
+## 2. File map (own files; plus `vendor/`, see Section 3)
 
 **Root docs/config**: `README.md` (EN/AR product page, format table, credit lines) ·
 `BUILDING.md` (build steps) · `HANDOVER.md` (short internal handover: paths, commands, rules) ·
 `CLAUDE_HANDOVER.md` (this file) · `LICENSE` (MIT) · `RELEASE_NOTES.md` ·
-`THIRD_PARTY_LICENSES.txt` (26 Go modules + libavif/aom/dav1d/libwebp texts; ships in installer
-+ portable) · `THIRD_PARTY_NOTICES.md` · `go.mod` (module `raha`; `replace` → `../deps/...`)
-· `.gitignore` (ignores `*.exe`, incl. `installer/Falak.exe`) · `rsrc_windows_amd64.syso`
+`THIRD_PARTY_LICENSES.txt` (25 Go modules + wazero NOTICE + libavif/aom/dav1d/libwebp texts;
+ships in installer + portable) · `THIRD_PARTY_NOTICES.md` · `CLAUDE.md` (permanent rules) ·
+`go.mod`/`go.sum` (module `raha`, upstream versions, 3 version replaces) · `vendor/` ·
+`.gitignore` (ignores `*.exe`, `build/`, the old local `deps/`) · `rsrc_windows_amd64.syso`
 (checked-in icon+VERSIONINFO 1.0.0.0+manifest, linked automatically).
 
 **App entry/Windows layer**: `main_windows.go` (App lifecycle, drag sessions, tick/present,
@@ -107,7 +109,8 @@ target) · `tray_windows.go` (tray icon) · `menu_windows.go` (tray menu window,
 fade/slide animation via `presentLayeredA`) · `compdialog_windows.go` (Compress dialog host,
 no captures) · `help_windows.go` (How-to-use host) · `win32_windows.go` (Win32 decls) ·
 `input_windows.go` (keyboard state) · `elevation_windows.go` (run-as-admin) ·
-`helper_windows.go` (KeysHelper opt-in) · `install_windows.go` (self-install, registry) ·
+`helper_windows.go` (key helper opt-in, UAC each start) · `install_windows.go` (self-install
+into `installDir()` = installer's InstallLocation or the default; old helper task removal) ·
 `startup_windows.go` (Run key) · `theme_windows.go` (dark mode detect) · `i18n_windows.go`
 (`T(en, ar)`) · `sound_windows.go` (**FROZEN**) · `sound_windows_test.go` · `log_windows.go`.
 
@@ -128,7 +131,9 @@ FFmpeg `libx265` encodes HEVC, `heif.go` writes the HEIF container itself) · `i
 `pdfium_windows.go`+`pdfium_other.go` (PDFium) · `qpdf.go` · `svg.go` (resvg) · `raw.go` ·
 `merge.go` · `metadata.go` · `sevenzip_write.go` · `text.go` · `textarchive.go` ·
 `wic_windows.go` (WIC codecs) · `lang.go` · `progress.go`(+test) · `tempfiles.go` ·
-`conv_test.go`/`media_test.go`/`text_test.go`.
+`conv_test.go`/`media_test.go`/`text_test.go` · `engines.go` (pinned engine URLs + SHA-256,
+`falak-engine.txt` pin file) · `engines_test.go` (offline) · `engines_net_test.go` (tag
+`enginesnet`: downloads and runs all four engines) · `testdata/` (sample HEIC/AVIF/WEBP).
 
 **`cmd/`** (dev-only preview/bench tools): `preview`, `themeprev`, `menuprev`, `headerprev`,
 `compressprev`, `helpprev`, `panelprev`, `hoverprev`, `entrance`, `toolprev`, `iconprev`,
@@ -140,6 +145,8 @@ FFmpeg `libx265` encodes HEVC, `heif.go` writes the HEIF container itself) · `i
 "Falak 1.0.0 · By UncleGlitch"`; OutFile two levels above `installer/`) · `license.txt` ·
 `raha.ico`/`raha-nsis.ico` · `audit_paths.py` (static NSIS path audit — part of the gate) ·
 `verify-install.ps1` (real-Windows runtime verification) · `Falak.exe` (gitignored build drop).
+Compile-time asset paths use backslashes (`${__FILEDIR__}\...`): makensis on Windows does not
+find `${__FILEDIR__}/...` files.
 
 **`res/`** (**FROZEN sounds** `hover.wav`/`appear.wav`/`drop.wav`; `raha.ico`, `raha.rc`,
 `raha.manifest`, `icon-1024.png`).
@@ -150,61 +157,74 @@ FFmpeg `libx265` encodes HEVC, `heif.go` writes the HEIF container itself) · `i
 
 | Tool | Version |
 |---|---|
-| Go | **go1.27.3** linux/amd64 (needs ≥ 1.24) |
-| NSIS (makensis) | **v3.09-4** |
-| Python | **3.12.3** (PIL/Pillow installed; used for audits + docs composition) |
-| go-winres | **not installed in the sandbox** — the `.syso` is prebuilt and checked in |
+| Go | **go1.27.3** windows/amd64 (module says `go 1.25.0`) |
+| NSIS (makensis) | **v3.13** (Windows) |
+| Python | **3.14** (`py`; used for audits) |
+| go-winres | not installed — the `.syso` is prebuilt and checked in |
 
-Layout: repo at `~/workspace/falak-build/falak-src`, deps at `~/workspace/falak-build/deps`
-(**must sit next to the repo** — `go.mod` has `replace … ../deps/...`; pins like
-`gen2brain/avif|heic|webp v0.0.0`, `srwiley/oksvg|rasterx v0.0.0` do not exist upstream —
-they are wasm2go builds generated for this project; **never** drop the `replace` lines or
-try `GOPROXY` for them).
+Machine (Windows 11): repo at `C:\Projects\Falak` (git, branch `main`, local config
+`core.autocrlf=false`). Test-only FFmpeg 9.0.2 at `C:\Projects\tools\ffmpeg-9.0.2` (outside the
+repo; put it on PATH for the FFmpeg tests, which skip without one).
 
-**Falak.exe** (from repo root):
+**Dependencies are vendored** (`vendor/`, `go.sum`): a fresh clone builds offline. Every module
+is unmodified upstream code (checked file by file against the Go module proxy when the old
+local `deps/` copies were retired — commit `c311c4e`). The former "v0.0.0" pins
+(gen2brain/avif|heic|webp, srwiley/oksvg|rasterx) turned out to be plain upstream code.
+`replace` pins three modules to the versions Falak 1.0.0 is built from, because other modules
+ask for newer ones: `golang.org/x/sys v0.30.0`, `ebitengine/purego v0.8.4`,
+`andybalholm/brotli v1.1.0`. `godebug default=go1.24` keeps the 1.0.0 GODEBUG defaults.
+To change a dependency: edit go.mod → `go mod tidy` → `go mod vendor`, commit all three.
+
+**Falak.exe** (from repo root; output only in `build/`):
 ```
-GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off GOMEMLIMIT=2500MiB \
 GOOS=windows GOARCH=amd64 go build -p 1 -tags "wasm2go nodynamic" \
-  -ldflags "-s -w -H windowsgui" -trimpath -o installer/Falak.exe .
+  -ldflags "-s -w -H windowsgui" -trimpath -o build/Falak.exe .
 ```
 **rsrc_windows_amd64.syso**: already checked in (icon + VERSIONINFO 1.0.0.0 + manifest);
 the linker picks it up automatically. To change it you would `go install
 github.com/tc-hib/go-winres@latest` and regenerate from the `res/raha.rc`-equivalent
 config — **not needed for 1.0.0**.
-**FalakSetup-1.0.0.exe**: put the built `Falak.exe` into `installer/`, then
-`makensis -INPUTCHARSET UTF8 "$(pwd)/installer/falak.nsi"` (absolute script path; output
-lands two directories above `installer/`, i.e. `~/workspace/falak-build/`).
+**FalakSetup-1.0.0.exe** (into `build/` only): mirror the script into
+`build/nsis/installer/` (falak.nsi, raha-nsis.ico, license.txt, the built Falak.exe) with
+`THIRD_PARTY_LICENSES.txt` in `build/nsis/`, run
+`makensis -INPUTCHARSET UTF8 <abs path>\build\nsis\installer\falak.nsi` (OutFile two levels up
+= `build/FalakSetup-1.0.0.exe`), then delete `build/nsis`.
 **Falak-1.0.0-portable.zip**: zip exactly `Falak.exe` + `README.txt` + `THIRD_PARTY_LICENSES.txt`
 (README.txt is the short portable read-me, regenerated in-session; content in the delivered zip).
 **SHA256SUMS.txt**: `sha256sum FalakSetup-1.0.0.exe Falak-1.0.0-portable.zip > SHA256SUMS.txt`.
 **github-upload-1/2.zip**: copy the repo's upload file set into `github-upload/` (docs/ included,
 flat layout, **never HANDOVER.md / CLAUDE_HANDOVER.md**), zip alphabetically split into two
 batches (currently 54 + 55 files).
-**Gates**: `go test ./...` · `go vet -tags "wasm2go nodynamic" ./...` (host vet + windows
-build + tests; `GOOS=windows go vet` has pre-existing unsafe.Pointer warnings — not the gate)
-· `python3 installer/audit_paths.py`.
+**Gates**: `go test -count=1 ./...` · `GOOS=linux go vet -tags "wasm2go nodynamic" ./...`
+(clean; `GOOS=windows` vet has 12 pre-existing unsafe.Pointer warnings — not the gate) ·
+`py installer/audit_paths.py` (also forbids `RMDir /r "$INSTDIR`, `${__FILEDIR__}/` and
+PowerShell). After an engine pin change: `go test -tags enginesnet -run TestEnginePins ./conv`.
 **User-side**: `powershell -ExecutionPolicy Bypass -File installer\verify-install.ps1`
 (silent install, shortcut targets, capture-affinity log lines, GIF with the pinned FFmpeg 9.0.2, drag CPU).
-**Hard-won gotchas**: `set -e` unreliable in the sandbox shell (use explicit `&&`); `go test | tail`
-swallows exit codes; gofmt realignment breaks exact-match patches (use unique context);
-wine is broken and 32-bit Windows code cannot execute in the sandbox at all.
+**Hard-won gotchas**: `go test | tail` swallows exit codes; gofmt realignment breaks
+exact-match patches (use unique context); Python `write_text` on Windows writes CRLF — write
+bytes to keep LF; `pdfium.dll` stays loaded in a test process, so its temp folder cannot be
+deleted until the process exits.
 
 ## 4. Permanent rules (every task, every commit)
 1. One commit per task; message style `1.0.0: <what changed>`.
 2. Trailer **exactly** `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` —
    **never** a Claude-Session / generated--with line.
-3. All files UTF-8.
+3. All files UTF-8 with LF line endings (vendored files stay as upstream ships them).
 4. **Never change an existing Arabic string.** New Arabic only with the user's exact text,
    shown in full in your reply.
 5. Version stays **1.0.0** until the user says otherwise.
 6. `HANDOVER.md` / `CLAUDE_HANDOVER.md` never go into the github-upload zips.
 7. Gates before every commit: `go test ./...`, `go vet` (tags), `installer/audit_paths.py`.
+8. Never touch `Falak-1.0.0-release` while the Microsoft review is pending; builds go to
+   `build/` only. Do not build the Setup unless the owner asks.
 
 ## 5. SOUND RULE — never modify the sound code
-**Frozen verbatim at commit `4bd539b`**: `sound_windows.go`, `res/*.wav`, and every call
-site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` / `soundOn`. No redesign,
-no "improvements", no volume changes — if a sound task ever comes up, **restore from
-`4bd539b`**, do not edit.
+**Frozen verbatim at commit `4bd539b`** (old history, not in this repository; this repo's first
+commit `8816700` holds the same sound files and call sites): `sound_windows.go`, `res/*.wav`,
+and every call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` / `soundOn`.
+No redesign, no "improvements", no volume changes — if a sound task ever comes up, **restore
+from `8816700`** (`git checkout 8816700 -- sound_windows.go res/`), do not edit.
 
 Failed attempts (all abandoned — do not retry without an explicit user request):
 1. `PlaySound`-based approaches (0.31 era) — unreliable for looping/mixing.
@@ -245,6 +265,29 @@ Failed attempts (all abandoned — do not retry without an explicit user request
 - **Readme/licenses** (`4ca3505`, `79112fb`): credit lines EN+AR; `THIRD_PARTY_LICENSES.txt`
   shipped in installer+portable; README points to GitHub release pages for FFmpeg (not ffmpeg.org).
 
+Decisions from the 2026-11-08 review session (this repository's history):
+- **Key helper = UAC prompt every start** (`4901549`, text `14462d5`): the scheduled task
+  `Falak\KeysHelper` ran a user-writable exe with highest privileges and no prompt (silent
+  elevation). No task any more; the elevated helper, the installer and the uninstaller delete
+  an old one (installers fall back to one `runas` prompt). After a refused prompt the helper
+  is not relaunched on every drag.
+- **Engines pinned** (`9821259`): FFmpeg 9.0.2 `full_build-shared` from GyanD/codexffmpeg
+  (permanent numbered releases; BtbN "latest" broke compress-to-size: `-pass 2` hit the AAC
+  stream, fixed with `-pass:v`/`-passlogfile:v` in `79b7d5c`), PDFium chromium/8138,
+  qpdf 12.3.2, resvg 0.49.0, each with SHA-256; a mismatch reuses the existing "download
+  didn't finish" text. Never go back to "latest" links.
+- **Engines folder** `%LOCALAPPDATA%\Falak\tools` (`b32152d`), not the install folder.
+- **One install folder** (`6081f23`): `installDir()` = installer's InstallLocation when
+  Falak.exe is there, else `%LOCALAPPDATA%\Programs\Falak`; a second copy left by old builds
+  in the default folder is removed; `InstallDirRegKey` reuses the folder on update.
+- **Uninstaller**: deletes only the files it installed and `RMDir` (no `/r`) on `$INSTDIR`
+  (`d4b9569`); reads the keep-settings answer via `MessageBox … IDYES` (`a0456db`); no
+  PowerShell — Layers cleanup is an NSIS `EnumRegValue` loop; closes Falak with
+  `wmQuitUpdate` (0x8009) to `FalakMsg`, waits 5 s, then `taskkill /F`, then up to 3 s more
+  for the elevated helper (`0f3acfe`).
+- **Video compress** no longer holds `engineMu` during the encode (`b3a7987`).
+- **Vendored dependencies** (`c311c4e`), see Section 3.
+
 ## 7. Screenshots and docs images
 The README images (`docs/wheel-light-dark.png`, `docs/tray-menu.png`, `docs/compress-dialog.png`)
 were **rendered headlessly in the sandbox** — no Windows UI. Because the sandbox has **no
@@ -265,20 +308,24 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 540, wheel center (270,270).
 
 ## 8. Current state (as of 2026-11-08)
-- Final commit: `7bdc834` "1.0.0: no seam in the hover fill mid-animation"; tree clean.
+- Repository: `C:\Projects\Falak`, git `main`; history starts at `8816700` (import of the state
+  after `7bdc834` "1.0.0: no seam in the hover fill mid-animation"); later commits are the
+  review fixes listed in Section 6. Version still 1.0.0.
+- New builds of Falak.exe / FalakSetup-1.0.0.exe exist only in `build/` (not published; their
+  hashes differ from the ones under review). Manual testing on real Windows is pending.
 - **GitHub repo github.com/GlitchGLH/Falak is public (MIT, author UncleGlitch).**
   The owner replaced `docs/tray-menu.png` and `docs/compress-dialog.png` with real screenshots
   on GitHub; **local copies are outdated** (leave them alone).
 - **Release v1.0.0 is NOT published yet** (everything is prepared: two upload batches).
 - **Microsoft submission `b8db366f-2c5d-4fba-ad8e-c4455e28841c`** (Wacatac.B!ml false
-  positive) is **pending** → **the binaries must stay byte-identical; do NOT rebuild**.
-- Final hashes (copy of `SHA256SUMS.txt`):
+  positive) is **pending** on the files in `Falak-1.0.0-release` → never touch that folder.
+- Hashes under review (copy of `SHA256SUMS.txt`):
   - `c8468accc505bc1bf82dcf36dbe0205cfb20205ac8eef494695e27a1e2063883  FalakSetup-1.0.0.exe`
   - `0bbad8511b6372a713096037f1b3da756ebc28b9173da01b61230955898e26f4  Falak-1.0.0-portable.zip`
   - (Falak.exe inside both: `b563301f172dca56b64541be5162ea52656dae22780e955f1290fa9d0b6e7200`)
 - VirusTotal stays **manual** (no API key, ever).
-- Real-Windows runtime checks pending via `installer/verify-install.ps1` (sandbox cannot run
-  Windows code; wine is broken).
+- Real-Windows runtime checks pending (the owner runs them by hand; `installer/verify-install.ps1`
+  covers part of it).
 
 ## 9. Known issues and open items
 - **Compress-to-size accuracy**: a 2.00 MB target yielded 1.17 MB actual (two-pass FFmpeg
@@ -293,20 +340,22 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
   (`libx265`, GPL build, fetched by the user at runtime, not shipped). The attribution sits in
   `THIRD_PARTY_LICENSES.txt` — keep it shipped in installer+portable.
 - **Unsigned binaries**: SmartScreen warnings expected; the Microsoft FP review is the remedy.
+- **Engine pins need manual bumps** for security fixes (edit `conv/engines.go`, run the
+  `enginesnet` test). If an upstream asset ever disappears, downloads fail until re-pinned.
 - **Untested on real Windows** (sandbox limits): silent install + shortcut targets, capture
   affinity log lines, GIF conversion with the pinned gyan.dev FFmpeg 9.0.2, drag CPU load,
   hover sounds on all audio devices. All covered by `installer/verify-install.ps1`.
-- **Sandbox quirks to remember**: no Arabic fonts (renders show "..."), wine broken,
-  `gofmt -l` flags pre-existing formatting in `main_windows.go` (cosmetic only — was never
+- `gofmt -l` flags pre-existing formatting in `main_windows.go` (cosmetic only — was never
   part of the gate).
 
 ## 10. First message for the new model (copy-paste into the new session)
 > You are taking over Falak 1.0.0 from a previous session. Read CLAUDE_HANDOVER.md at the
-> repo root FIRST, then HANDOVER.md. The repo is at falak-src/ with deps/ next to it.
-> Non-negotiable: (1) do NOT rebuild FalakSetup-1.0.0.exe, Falak.exe, the portable zip or
-> SHA256SUMS.txt — a Microsoft false-positive review on the Setup's hash
-> (c8468accc505bc1bf82dcf36dbe0205cfb20205ac8eef494695e27a1e2063883) is pending; (2) never
-> modify the sound code (sound_windows.go, res/*.wav, sound call sites — frozen at 4bd539b);
+> repo root FIRST (and CLAUDE.md), then HANDOVER.md. The repo is C:\Projects\Falak (git, vendored
+> dependencies). Non-negotiable: (1) never touch Falak-1.0.0-release — a Microsoft
+> false-positive review on the Setup's hash
+> (c8468accc505bc1bf82dcf36dbe0205cfb20205ac8eef494695e27a1e2063883) is pending; any new
+> build goes to build/ only; (2) never
+> modify the sound code (sound_windows.go, res/*.wav, sound call sites — frozen; same as 8816700);
 > (3) never change an existing Arabic string; (4) one commit per task with only
 > "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"; (5) version stays 1.0.0;
 > (6) run the gates (go test ./..., go vet with tags, installer/audit_paths.py) before every

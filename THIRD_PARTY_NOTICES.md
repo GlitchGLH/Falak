@@ -1,10 +1,14 @@
 # Third-party notices
 
-## Libraries compiled into Falak (Go modules, kept in deps/)
+## Libraries compiled into Falak (Go modules, vendored in vendor/)
+
+All of them are unmodified upstream code at the exact versions listed in
+`go.mod` and `vendor/modules.txt` (`go.sum` holds their hashes). Nothing in
+`vendor/` is edited by hand; there are no local modifications to declare.
 
 | Library | License |
 |---|---|
-| golang.org/x/sys, x/image, x/text, x/net, x/sync | BSD-3 (The Go Authors) |
+| golang.org/x/sys, x/image, x/text, x/net | BSD-3 (The Go Authors) |
 | github.com/fogleman/gg | MIT |
 | github.com/golang/freetype | FreeType License / MIT (dual, your choice) |
 | github.com/bodgit/sevenzip, bodgit/plumbing, bodgit/windows | BSD-3 |
@@ -16,12 +20,11 @@
 | github.com/nwaples/rardecode/v2 | BSD-3 |
 | github.com/srwiley/oksvg, srwiley/rasterx | BSD-3 |
 | github.com/ebitengine/purego | Apache 2.0 |
-| github.com/tetratelabs/wazero | Apache 2.0 |
+| github.com/tetratelabs/wazero | Apache 2.0 (its NOTICE file is included in `THIRD_PARTY_LICENSES.txt`) |
 | go4.org | Apache 2.0 |
 | github.com/hashicorp/errwrap, go-multierror, golang-lru/v2 | MPL-2.0 |
-| test-only: stretchr/testify, go-difflib, go-spew, objx, yaml.v3 | MIT / ISC / Apache 2.0 |
 
-Full license texts ship next to each module in the deps/ folder. A copy of every compiled module's license text ships with the app as `THIRD_PARTY_LICENSES.txt` (next to Falak.exe, and in the portable zip).
+Full license texts ship next to each module in the vendor/ folder. A copy of every compiled module's license text ships with the app as `THIRD_PARTY_LICENSES.txt` (next to Falak.exe, and in the portable zip).
 
 ## Programs Falak downloads at first use (never bundled)
 

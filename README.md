@@ -35,10 +35,17 @@ By UncleGlitch (GitHub: @GlitchGLH)
 1. Download `FalakSetup-1.0.0.exe` from the
    [releases page](https://github.com/GlitchGLH/Falak/releases/latest).
 2. Run it — no administrator rights needed; Falak installs for your user only
-   (`%LOCALAPPDATA%\Programs\Falak`).
+   (`%LOCALAPPDATA%\Programs\Falak`, or a folder you choose).
 3. The Falak icon appears next to the clock. Drag a file and press Shift.
 
 A portable version that needs no installation is attached to the release too.
+
+## Key-reading helper (optional)
+
+When you drag from the desktop, Windows can hide the Shift key and the mouse
+button from Falak. The optional helper (tray menu → Key-reading helper) reads
+them with administrator rights, so Windows asks for your approval each time
+the helper starts. Falak creates no scheduled task for it.
 
 ## SmartScreen
 
@@ -51,15 +58,21 @@ your computer — see Privacy below.
 
 Windows Settings → Apps → Falak → Uninstall (or `Uninstall.exe` in the install
 folder). You are asked whether to delete your settings too; by default they
-are kept. The uninstaller removes the program, the shortcuts, the startup
-entry, the helper's scheduled task, the log folder and the downloaded engines.
+are kept. The uninstaller closes Falak, then removes the files it installed
+(other files in a folder you chose are kept; the folder goes only when
+empty), the shortcuts, the startup entry, the log folder and the downloaded
+engines (`%LOCALAPPDATA%\Falak`), plus the helper's scheduled task left by
+earlier builds, if any.
 
 ## Privacy
 
 Everything happens on your computer. The only network access is the one-time
 download of the free conversion engines when you first use a format that
 needs one: FFmpeg, PDFium, qpdf and resvg, downloaded from their GitHub
-release pages. No telemetry, no analytics, no uploads.
+release pages. Falak always fetches the same fixed releases (FFmpeg 9.0.2 by
+gyan.dev, PDFium chromium/8138, qpdf 12.3.2, resvg 0.49.0) and checks each
+download against its SHA-256 before using it. No telemetry, no analytics, no
+uploads.
 
 ## License
 
