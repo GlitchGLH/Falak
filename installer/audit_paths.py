@@ -62,6 +62,12 @@ if "'\"$INSTDIR\\Falak.exe\" --startup'" not in nsi:
 if re.search(r'RMDir\s+/r\s+"\$INSTDIR', nsi):
     fails.append('uninstaller must not use RMDir /r on $INSTDIR')
 
+# 7. No PowerShell in the installer (plain NSIS does the registry cleanup;
+#    script hosts with -ExecutionPolicy Bypass look like malware to AV).
+code = "\n".join(l for l in nsi.splitlines() if not l.lstrip().startswith((";", "#")))
+if re.search(r'powershell', code, re.IGNORECASE):
+    fails.append("installer must not run PowerShell")
+
 if fails:
     print("NSI PATH AUDIT FAILED:")
     for f in fails:

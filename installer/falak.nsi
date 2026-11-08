@@ -7,6 +7,7 @@ Unicode true
 
 !define RunKey "Software\Microsoft\Windows\CurrentVersion\Run"
 !define UninstKey "Software\Microsoft\Windows\CurrentVersion\Uninstall\Falak"
+!define LayersKey "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
 
 Name "Falak"
 OutFile "${__FILEDIR__}\..\..\FalakSetup-1.0.0.exe"
@@ -60,22 +61,37 @@ Var hOptDlg
 Var DesktopHnd
 Var StartupHnd
 
-; Close a running Falak quietly: graceful close, wait 3 s, then end it.
+; wmQuitUpdate in main_windows.go (WM_APP + 9): asks a running Falak to
+; close cleanly (it stops its conversions first), as a newer copy does.
+!define FALAK_QUIT_MSG 0x8009
+
+; Close a running Falak: send FalakMsg the quit message and wait up to 5 s.
+; Only if Falak.exe is still running then, end it with taskkill /F, and give
+; any copy that cannot be ended (the key helper runs as administrator; it
+; exits by itself once Falak is gone) up to 3 s more.
 ; Every nsExec::Exec pushes its exit code; each one is popped so nothing is
 ; left on the stack for later code to read by mistake.
-!macro CloseFalak
-  nsExec::Exec 'schtasks /End /TN "Falak\KeysHelper"'
-  Pop $0
-  nsExec::Exec 'taskkill /IM Falak.exe'
-  Pop $0
-  Sleep 3000
+!macro FalakRunning
   nsExec::Exec 'cmd /c tasklist /FI "IMAGENAME eq Falak.exe" | find /I "Falak.exe" > NUL'
-  Pop $0
-  ${If} $0 == 0
-    nsExec::Exec 'taskkill /F /IM Falak.exe'
-    Pop $0
+  Pop $0 ; 0 = a Falak.exe is running
+!macroend
+!macro CloseFalak
+  FindWindow $1 "FalakMsg"
+  ${If} $1 <> 0
+    SendMessage $1 ${FALAK_QUIT_MSG} 0 0 /TIMEOUT=2000
   ${EndIf}
-  Sleep 500
+  StrCpy $2 0
+  ${Do}
+    !insertmacro FalakRunning
+    ${IfThen} $0 != 0 ${|} ${Break} ${|}
+    ${If} $2 = 25 ; 25 x 200 ms = 5 s
+      nsExec::Exec 'taskkill /F /IM Falak.exe'
+      Pop $0
+    ${EndIf}
+    ${IfThen} $2 >= 40 ${|} ${Break} ${|}
+    Sleep 200
+    IntOp $2 $2 + 1
+  ${Loop}
 !macroend
 
 ; Earlier builds created the scheduled task Falak\KeysHelper, which started
@@ -165,14 +181,24 @@ Section Uninstall
   DeleteRegValue HKCU "${RunKey}" "Falak"
   DeleteRegValue HKCU "${RunKey}" "Raha"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "Falak"
-  FileOpen $1 "$TEMP\falak-cleanup.ps1" w
-  FileWrite $1 "$$p='HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers'$\r$\n"
-  FileWrite $1 "$$k=Get-Item -LiteralPath $$p -ErrorAction SilentlyContinue$\r$\n"
-  FileWrite $1 "if($$k){$$k.Property | Where-Object {$$_ -like '*\\Falak.exe'} | ForEach-Object {Remove-ItemProperty -LiteralPath $$p -Name $$_}}$\r$\n"
-  FileClose $1
-  nsExec::Exec 'powershell -NoProfile -ExecutionPolicy Bypass -File "$TEMP\falak-cleanup.ps1"'
-  Pop $0
-  Delete "$TEMP\falak-cleanup.ps1"
+  ; Remove "Run as administrator" marks on any ...\Falak.exe (plain NSIS,
+  ; no PowerShell). StrCmp/== ignore case. After a delete the same index
+  ; holds the next value, so the index only moves on when a value is kept.
+  StrCpy $1 0
+  ${Do}
+    ClearErrors
+    EnumRegValue $2 HKCU "${LayersKey}" $1
+    ${If} ${Errors}
+    ${OrIf} $2 == ""
+      ${Break}
+    ${EndIf}
+    StrCpy $3 $2 "" -10
+    ${If} $3 == "\Falak.exe"
+      DeleteRegValue HKCU "${LayersKey}" $2
+    ${Else}
+      IntOp $1 $1 + 1
+    ${EndIf}
+  ${Loop}
   !insertmacro DeleteOldHelperTask
   Delete "$SMPROGRAMS\Falak.lnk"
   Delete "$DESKTOP\Falak.lnk"
