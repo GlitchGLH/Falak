@@ -64,18 +64,21 @@ section wins over anything older below it. Arabic is quoted character for charac
   - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
   - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
 
-### Latest build/ outputs (not published)
-The three files in `build/` (`Falak.exe`, `FalakSetup-1.0.0.exe`,
-`Falak-1.0.0-portable.zip`) were built from `da1d3f1` (`vcs.modified=false`); later
-commits change only documentation, and the owner chose not to rebuild for them.
-| File | SHA-256 |
-|---|---|
-| `build/Falak.exe` | `74433992a92d7967d5e500f85714570c266de0ac633fd4551c8ebc1a2b2d0813` |
-| `build/FalakSetup-1.0.0.exe` | `7369dcbd4b73ae745d2abc3280309f12ce796d6438a5a91a3ce63f601102ee31` |
-| `build/Falak-1.0.0-portable.zip` | `67c0606d5fad3c8f5c2068b7a3fe987688de25c3102756e3df8906f279e3982e` |
+### FINAL build (2026-11-09, from `57f35db`; not published)
+Built from a clean tree at `57f35db` (`vcs.revision=57f35db8821db9a9a8015dc47fff6b14d7ffff7a`,
+`vcs.modified=false`; the untracked `shots_windows_test.go` was moved out of the repo during
+the build), after all gates passed. Version 1.0.0 (VERSIONINFO 1.0.0.0 in Falak.exe and the
+Setup). `build/SHA256SUMS.txt` holds the three hashes.
+| File | Size (bytes) | SHA-256 |
+|---|---|---|
+| `build/Falak.exe` | 38,699,008 | `41374c553b7e3a0e11ba5e179f1b4a424a33fa5385667096f867ef970a1c1d7c` |
+| `build/FalakSetup-1.0.0.exe` | 12,606,153 | `8a44dc4c52252f48a2559701b978cdb03fe30b2702f70fc931937c58c6e6da2c` |
+| `build/Falak-1.0.0-portable.zip` | 16,926,635 | `a42d03a2cc3bb0f7c39f0887954cf05a4b716392e3d9eb8883c645e95d2d5926` |
 
-Every commit changes these hashes (Go embeds the git revision). Do not rebuild until the
-owner asks (NEXT item 2 is the final build).
+Checked: the zip holds exactly `Falak.exe`, `README.txt`, `THIRD_PARTY_LICENSES.txt`; the
+`Falak.exe` in the zip and in the Setup payload (7-Zip) are byte-identical to
+`build/Falak.exe`; `go list -deps .` has no shots code. **Do not rebuild**: this is the final
+build; later commits (like the one recording it) change documentation only.
 
 ### Commits since the import
 | Commit | Title | Purpose |
@@ -209,18 +212,18 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - README screenshots (commit "README screenshots"): 20 PNGs in `docs/` (see Section 7), shown
   in both README sections with English alt text; old `docs/tray-menu.png` and
   `docs/compress-dialog.png` removed.
+- Final build from `57f35db` (2026-11-09), hashes above.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
 ### IN PROGRESS
-- Nothing in progress in code. `build/` holds the build from `da1d3f1` (tested above; not
-  the final build).
+- Nothing in progress. `build/` holds the FINAL build from `57f35db` (see above).
 
 ### NEXT (in this order)
-1. Final build. No more builds after that.
-2. New VirusTotal scan and new Microsoft false-positive report on the final
-   `FalakSetup-1.0.0.exe`.
-3. Publish v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
+1. Quick manual test of the final build on the owner's PC.
+2. VirusTotal scan and a new Microsoft false-positive report on the final
+   `FalakSetup-1.0.0.exe` (and the portable zip).
+3. GitHub release v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
    see Q1 below for how).
 
 ### Rejected by the owner (do not implement)
