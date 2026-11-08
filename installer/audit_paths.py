@@ -51,6 +51,11 @@ elif 'UninstallString' in nsi and nsi.find(wu) > nsi.find('"UninstallString"'):
 if "'\"$INSTDIR\\Falak.exe\" --startup'" not in nsi:
     fails.append("Run value must be '$INSTDIR\\Falak.exe' with a backslash")
 
+# 6. The uninstaller must never delete $INSTDIR recursively (the user may
+#    have picked a folder holding other files); only RMDir without /r.
+if re.search(r'RMDir\s+/r\s+"\$INSTDIR', nsi):
+    fails.append('uninstaller must not use RMDir /r on $INSTDIR')
+
 if fails:
     print("NSI PATH AUDIT FAILED:")
     for f in fails:

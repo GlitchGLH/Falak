@@ -161,7 +161,15 @@ Section Uninstall
   Delete "$SMPROGRAMS\Falak.lnk"
   Delete "$DESKTOP\Falak.lnk"
   RMDir "$SMPROGRAMS"
-  RMDir /r "$INSTDIR"
+  ; Only the files this installer put in $INSTDIR (plus Falak's own
+  ; self-update leftovers), never the whole folder: the user may have picked
+  ; a folder that holds other files. The folder goes only if it is now empty.
+  Delete "$INSTDIR\Falak.exe"
+  Delete "$INSTDIR\Falak.exe.new"
+  Delete "$INSTDIR\Falak.exe.old"
+  Delete "$INSTDIR\THIRD_PARTY_LICENSES.txt"
+  Delete "$INSTDIR\Uninstall.exe"
+  RMDir "$INSTDIR"
   RMDir /r "$LOCALAPPDATA\Falak"
   RMDir /r "$TEMP\falak-tools"
   DeleteRegKey HKCU "${UninstKey}"
