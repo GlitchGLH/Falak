@@ -248,15 +248,22 @@ func (a *App) launchCompress(path string, plan conv.CompressPlan, label string, 
 					err = errors.New(T("Unexpected error while processing", "خطأ غير متوقع أثناء المعالجة"))
 				}
 			}()
-			engineMu.Lock()
-			defer engineMu.Unlock()
-			if !conv.HaveFFmpeg() {
-				logf("downloading FFmpeg")
-				report(0)
-				if e := conv.EnsureFFmpeg(report); e != nil {
-					return "", e
+			// engineMu guards only the FFmpeg download; the compression
+			// itself runs unlocked so other conversions never wait for it.
+			if e := func() error {
+				engineMu.Lock()
+				defer engineMu.Unlock()
+				if !conv.HaveFFmpeg() {
+					logf("downloading FFmpeg")
+					report(0)
+					if e := conv.EnsureFFmpeg(report); e != nil {
+						return e
+					}
+					logf("FFmpeg ready")
 				}
-				logf("FFmpeg ready")
+				return nil
+			}(); e != nil {
+				return "", e
 			}
 			report(0)
 			return conv.RunWithPlan(ctx, path, "v:compress", plan, func(f float64) {
