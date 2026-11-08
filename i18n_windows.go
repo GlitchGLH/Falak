@@ -58,9 +58,7 @@ func idleTip() string {
 }
 
 func helpText() string {
-	return T(`How to use Falak:
-
-1. Start dragging a file (or several) from File Explorer, the desktop or any app that lets you drag files.
+	return T(`1. Start dragging a file (or several) from File Explorer, the desktop or any app that lets you drag files.
 2. While dragging, press Shift: the wheel appears around the pointer.
 3. Drop the file on the format you want. A new file is saved next to the original; the original is never changed.
 
@@ -75,9 +73,7 @@ Supported: images (JPG, PNG, WEBP, AVIF, HEIC, TIFF, BMP, GIF, ICO, SVG, camera 
 Engines downloaded on first use belong to their authors and keep their own licenses: FFmpeg (GPL), PDFium (BSD), qpdf (Apache 2.0), resvg (Apache 2.0 / MIT).
 
 — Falak By UncleGlitch`,
-		`طريقة الاستخدام:
-
-١. ابدأ سحب ملف (أو عدة ملفات) من مستكشف الملفات أو سطح المكتب أو أي برنامج يسمح بسحب الملفات.
+		`١. ابدأ سحب ملف (أو عدة ملفات) من مستكشف الملفات أو سطح المكتب أو أي برنامج يسمح بسحب الملفات.
 ٢. أثناء السحب اضغط Shift، فتظهر العجلة حول المؤشر.
 ٣. أفلت الملف على الصيغة التي تريدها، فتُحفظ نسخة جديدة بجانب الملف الأصلي، ولا يتغير الأصل.
 
