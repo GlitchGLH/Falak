@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -131,8 +133,6 @@ var FFmpegOverride string
 // Windows app uses it to hide console windows).
 var PrepareCmd = func(*exec.Cmd) {}
 
-const ffmpegURL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip"
-
 func exeName(n string) string {
 	if runtime.GOOS == "windows" {
 		return n + ".exe"
@@ -147,13 +147,10 @@ func FFmpegPath() string {
 	return filepath.Join(ToolsDir, "ffmpeg", exeName("ffmpeg"))
 }
 
-func HaveFFmpeg() bool {
-	_, err := os.Stat(FFmpegPath())
-	return err == nil
-}
+func HaveFFmpeg() bool { return haveEngine(FFmpegOverride, FFmpegPath(), ffmpegPin) }
 
-// EnsureFFmpeg downloads FFmpeg once (about 90 MB) and extracts the
-// programs and libraries it needs. progress receives values 0..1.
+// EnsureFFmpeg downloads FFmpeg once (about 100 MB, see ffmpegPin) and
+// extracts the programs and libraries it needs. progress receives 0..1.
 func EnsureFFmpeg(progress func(float64)) error {
 	if HaveFFmpeg() {
 		return nil
@@ -168,7 +165,7 @@ func EnsureFFmpegFrom(progress func(float64)) error {
 		return err
 	}
 	tmp := filepath.Join(ToolsDir, "ffmpeg-download.zip")
-	if err := download(ffmpegURL, tmp, progress); err != nil {
+	if err := download(ffmpegPin, tmp, progress); err != nil {
 		os.Remove(tmp)
 		return fmt.Errorf(tr("Couldn't download the video engine: %w", "تعذّر تنزيل محرك الفيديو: %w"), err)
 	}
@@ -179,11 +176,24 @@ func EnsureFFmpegFrom(progress func(float64)) error {
 		os.RemoveAll(staging)
 		return fmt.Errorf(tr("Couldn't unpack the video engine: %w", "تعذّر فك محرك الفيديو: %w"), err)
 	}
+	if err := ffmpegPin.mark(staging); err != nil {
+		os.RemoveAll(staging)
+		return err
+	}
 	os.RemoveAll(dir)
 	return os.Rename(staging, dir)
 }
 
-func download(url, dst string, progress func(float64)) error {
+// errDownloadIncomplete is reported for a cut-off download and for one
+// whose SHA-256 is not the pinned one (damaged or changed on the server).
+func errDownloadIncomplete() error {
+	return errors.New(tr("The download didn't finish", "التنزيل لم يكتمل"))
+}
+
+// download fetches p.URL into dst and checks it against p.SHA256; on a
+// mismatch dst is deleted.
+func download(p enginePin, dst string, progress func(float64)) error {
+	url := p.URL
 	client := &http.Client{Timeout: 30 * time.Minute}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "Falak")
@@ -203,9 +213,11 @@ func download(url, dst string, progress func(float64)) error {
 	var done int64
 	buf := make([]byte, 256<<10)
 	last := time.Time{}
+	sum := sha256.New()
 	for {
 		n, rerr := resp.Body.Read(buf)
 		if n > 0 {
+			sum.Write(buf[:n])
 			if _, werr := f.Write(buf[:n]); werr != nil {
 				f.Close()
 				return werr
@@ -226,9 +238,16 @@ func download(url, dst string, progress func(float64)) error {
 	}
 	if total > 0 && done != total {
 		f.Close()
-		return errors.New(tr("The download didn't finish", "التنزيل لم يكتمل"))
+		return errDownloadIncomplete()
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if hex.EncodeToString(sum.Sum(nil)) != p.SHA256 {
+		os.Remove(dst)
+		return errDownloadIncomplete()
+	}
+	return nil
 }
 
 // extractBin copies every file from the archive's bin/ folder into dir.

@@ -27,10 +27,14 @@ Full license texts ship next to each module in the deps/ folder. A copy of every
 
 | Tool | License | Downloaded from |
 |---|---|---|
-| FFmpeg (BtbN win64 build) | **GPL** — see warning | https://github.com/BtbN/FFmpeg-Builds (the BtbN builds, NOT ffmpeg.org) |
-| PDFium (bblanchon binaries) | BSD-3 (PDFium) | https://github.com/bblanchon/pdfium-binaries |
-| qpdf 12.3.2 | Apache 2.0 | https://github.com/qpdf/qpdf |
-| resvg | Apache 2.0 / MIT | https://github.com/linebender/resvg |
+| FFmpeg 9.0.2 (gyan.dev full_build-shared) | **GPL** — see warning | https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2 (NOT ffmpeg.org) |
+| PDFium chromium/8138 (bblanchon binaries) | BSD-3 (PDFium) | https://github.com/bblanchon/pdfium-binaries/releases/tag/chromium%2F8138 |
+| qpdf 12.3.2 | Apache 2.0 | https://github.com/qpdf/qpdf/releases/tag/v12.3.2 |
+| resvg 0.49.0 | Apache 2.0 / MIT | https://github.com/linebender/resvg/releases/tag/v0.49.0 |
+
+Each download is a fixed release checked against its SHA-256 (see
+`conv/engines.go`); a newer upstream release is used only after the pin in
+Falak is updated.
 
 **License warning (please read):** the FFmpeg build Falak downloads is the
 **GPL** build. GPL places conditions on distributing the GPL binaries

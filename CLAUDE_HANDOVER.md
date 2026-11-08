@@ -184,7 +184,7 @@ batches (currently 54 + 55 files).
 build + tests; `GOOS=windows go vet` has pre-existing unsafe.Pointer warnings — not the gate)
 · `python3 installer/audit_paths.py`.
 **User-side**: `powershell -ExecutionPolicy Bypass -File installer\verify-install.ps1`
-(silent install, shortcut targets, capture-affinity log lines, GIF vs BtbN ffmpeg, drag CPU).
+(silent install, shortcut targets, capture-affinity log lines, GIF with the pinned FFmpeg 9.0.2, drag CPU).
 **Hard-won gotchas**: `set -e` unreliable in the sandbox shell (use explicit `&&`); `go test | tail`
 swallows exit codes; gofmt realignment breaks exact-match patches (use unique context);
 wine is broken and 32-bit Windows code cannot execute in the sandbox at all.
@@ -294,7 +294,7 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
   `THIRD_PARTY_LICENSES.txt` — keep it shipped in installer+portable.
 - **Unsigned binaries**: SmartScreen warnings expected; the Microsoft FP review is the remedy.
 - **Untested on real Windows** (sandbox limits): silent install + shortcut targets, capture
-  affinity log lines, GIF conversion against the user's BtbN ffmpeg build, drag CPU load,
+  affinity log lines, GIF conversion with the pinned gyan.dev FFmpeg 9.0.2, drag CPU load,
   hover sounds on all audio devices. All covered by `installer/verify-install.ps1`.
 - **Sandbox quirks to remember**: no Arabic fonts (renders show "..."), wine broken,
   `gofmt -l` flags pre-existing formatting in `main_windows.go` (cosmetic only — was never

@@ -17,8 +17,6 @@ import (
 	"unicode/utf16"
 )
 
-const pdfiumURL = "https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-win-x64.tgz"
-
 // PDFDPI is the render resolution for PDF pages: print quality.
 const PDFDPI = 300
 
@@ -35,10 +33,7 @@ func PDFiumPath() string {
 	return filepath.Join(ToolsDir, "pdfium", "pdfium.dll")
 }
 
-func HavePDFium() bool {
-	_, err := os.Stat(PDFiumPath())
-	return err == nil
-}
+func HavePDFium() bool { return haveEngine(PDFiumOverride, PDFiumPath(), pdfiumPin) }
 
 // NeedsPDFium reports whether running id on path uses PDFium.
 func NeedsPDFium(path, id string) bool {
@@ -61,7 +56,7 @@ func EnsurePDFium(progress func(float64)) error {
 	}
 	tmp := filepath.Join(ToolsDir, "pdfium-download.tgz")
 	defer os.Remove(tmp)
-	if err := download(pdfiumURL, tmp, progress); err != nil {
+	if err := download(pdfiumPin, tmp, progress); err != nil {
 		return fmt.Errorf(tr("Couldn't download the PDF engine: %w", "تعذّر تنزيل محرك PDF: %w"), err)
 	}
 	f, err := os.Open(tmp)
@@ -93,7 +88,10 @@ func EnsurePDFium(progress func(float64)) error {
 				return err
 			}
 			w.Close()
-			return os.Rename(out+".part", out)
+			if err := os.Rename(out+".part", out); err != nil {
+				return err
+			}
+			return pdfiumPin.mark(dir)
 		}
 	}
 	return errors.New(tr("pdfium.dll wasn't found in the download", "لم يُعثر على pdfium.dll داخل الملف"))

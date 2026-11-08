@@ -21,10 +21,7 @@ import (
 	"github.com/srwiley/oksvg"
 )
 
-const (
-	svgMinSide = 1024
-	resvgURL   = "https://github.com/linebender/resvg/releases/latest/download/resvg-win-x86_64.zip"
-)
+const svgMinSide = 1024
 
 // ResvgOverride lets tests use a specific resvg binary.
 var ResvgOverride string
@@ -36,10 +33,7 @@ func ResvgPath() string {
 	return filepath.Join(ToolsDir, "resvg", exeName("resvg"))
 }
 
-func HaveResvg() bool {
-	_, err := os.Stat(ResvgPath())
-	return err == nil
-}
+func HaveResvg() bool { return haveEngine(ResvgOverride, ResvgPath(), resvgPin) }
 
 // NeedsResvg reports whether a file is an SVG drawing.
 func NeedsResvg(path string) bool { return Kind(path) == "SVG" }
@@ -55,7 +49,7 @@ func EnsureResvg(progress func(float64)) error {
 	}
 	tmp := filepath.Join(ToolsDir, "resvg-download.zip")
 	defer os.Remove(tmp)
-	if err := download(resvgURL, tmp, progress); err != nil {
+	if err := download(resvgPin, tmp, progress); err != nil {
 		return fmt.Errorf(tr("Couldn't download the SVG engine: %w", "تعذّر تنزيل محرك SVG: %w"), err)
 	}
 	zr, err := zip.OpenReader(tmp)
@@ -83,7 +77,10 @@ func EnsureResvg(progress func(float64)) error {
 		if err != nil {
 			return err
 		}
-		return os.Rename(out+".part", out)
+		if err := os.Rename(out+".part", out); err != nil {
+			return err
+		}
+		return resvgPin.mark(dir)
 	}
 	return errors.New(tr("resvg.exe wasn't found in the download", "لم يُعثر على resvg.exe داخل الملف"))
 }

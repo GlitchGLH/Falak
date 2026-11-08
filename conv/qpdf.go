@@ -16,8 +16,6 @@ import (
 // strongest setting, objects are packed, and large uncompressed images are
 // stored as high-quality JPEG only when that is smaller. Text and vector
 // drawings are never touched, so pages stay sharp.
-const qpdfURL = "https://github.com/qpdf/qpdf/releases/download/v12.3.2/qpdf-12.3.2-mingw64.zip"
-
 var QPDFOverride string
 
 func QPDFPath() string {
@@ -27,10 +25,7 @@ func QPDFPath() string {
 	return filepath.Join(ToolsDir, "qpdf", "qpdf.exe")
 }
 
-func HaveQPDF() bool {
-	_, err := os.Stat(QPDFPath())
-	return err == nil
-}
+func HaveQPDF() bool { return haveEngine(QPDFOverride, QPDFPath(), qpdfPin) }
 
 // NeedsQPDF reports whether the job uses qpdf.
 func NeedsQPDF(path, id string) bool { return Category(path) == "pdf" && id == "p:compress" }
@@ -49,7 +44,7 @@ func EnsureQPDF(progress func(float64)) error {
 	defer os.RemoveAll(part)
 	tmp := filepath.Join(ToolsDir, "qpdf-download.zip")
 	defer os.Remove(tmp)
-	if err := download(qpdfURL, tmp, progress); err != nil {
+	if err := download(qpdfPin, tmp, progress); err != nil {
 		return fmt.Errorf(tr("Couldn't download the PDF compressor: %w", "تعذّر تنزيل محرك ضغط PDF: %w"), err)
 	}
 	zr, err := zip.OpenReader(tmp)
@@ -80,6 +75,9 @@ func EnsureQPDF(progress func(float64)) error {
 	}
 	if !found {
 		return errors.New(tr("qpdf.exe wasn't found in the download", "لم يُعثر على qpdf.exe داخل الملف"))
+	}
+	if err := qpdfPin.mark(part); err != nil {
+		return err
 	}
 	os.RemoveAll(dir)
 	return os.Rename(part, dir)
