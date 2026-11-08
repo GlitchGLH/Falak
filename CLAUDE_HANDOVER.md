@@ -136,6 +136,12 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Proposal 4: replace or add to the «يستمر التحويل في الخلفية» balloon (job sent to the
   background) with a window. **Rejected; it stays a balloon only.**
 
+### Known and deferred (owner's decision 2026-11-09: do NOT fix for 1.0.0)
+- **Portable downgrade:** running an older portable copy can downgrade the installed Falak
+  (as found in the first code review). Known; not fixed.
+- **wmQuitUpdate:** any local program can close Falak by sending `wmQuitUpdate` (0x8009) to
+  the `FalakMsg` window (the uninstaller/installer use it to close Falak). Known; not fixed.
+
 ### Open questions (word for word, not yet answered by the owner)
 1. "This local repository's history starts at 8816700, while github.com/GlitchGLH/Falak has the
    old history. How do you want to publish: push this history to a new branch, replace main,
@@ -558,6 +564,8 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
   hover sounds on all audio devices. All covered by `installer/verify-install.ps1`.
 - `gofmt -l` flags pre-existing formatting in `main_windows.go` (cosmetic only — was never
   part of the gate).
+- **Deferred by the owner (2026-11-09):** portable downgrade and `wmQuitUpdate` closing Falak
+  (see "Known and deferred" in the Current state section). Do not fix without the owner.
 
 ## 10. First message for the new model (copy-paste into the new session)
 > You are taking over Falak 1.0.0 from a previous session. Read CLAUDE_HANDOVER.md at the
