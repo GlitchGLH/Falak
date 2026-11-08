@@ -20,7 +20,12 @@ import (
 	"raha/ui"
 )
 
-const WM_CHAR = 0x0102
+const (
+	WM_CHAR      = 0x0102
+	caretTimer   = 41
+	caretBlinkMs = 530
+	vkReturn     = 0x0D
+)
 
 var cdlgWin struct {
 	wnd      uintptr
@@ -86,6 +91,7 @@ func (a *App) showCompress(path, id, label string, cx, cy int32, scale float64) 
 	a.refreshCompress()
 	pShowWindow.Call(cdlgWin.wnd, SW_SHOW)
 	pSetForegroundWindow.Call(cdlgWin.wnd)
+	pSetTimer.Call(cdlgWin.wnd, caretTimer, caretBlinkMs, 0)
 	cdlgWin.shown = true
 	logf("compress dialog shown at %d,%d (%dx%d) for %s", cdlgWin.x, cdlgWin.y, w, h, filepath.Base(path))
 }
@@ -93,6 +99,7 @@ func (a *App) showCompress(path, id, label string, cx, cy int32, scale float64) 
 func hideCompress() {
 	if cdlgWin.shown {
 		cdlgWin.shown = false
+		pKillTimer.Call(cdlgWin.wnd, caretTimer)
 		if cdlgWin.last != nil {
 			pDwmFlush.Call()
 			animateLayeredClose(cdlgWin.wnd, cdlgWin.last, cdlgWin.x, cdlgWin.y)
@@ -118,10 +125,24 @@ func compressProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 	d := cdlgWin.dlg
 	switch msg {
 	case WM_KEYDOWN:
-		if wParam == VK_ESCAPE {
+		switch wParam {
+		case VK_ESCAPE:
 			hideCompress()
+		case vkReturn:
+			app.compressStart()
 		}
 		return 0
+	case WM_TIMER:
+		if wParam == caretTimer && d != nil && d.Editing {
+			d.CaretOn = !d.CaretOn
+			app.refreshCompress()
+		}
+		return 0
+	case WM_ACTIVATE:
+		if wParam&0xFFFF == 0 && d != nil && d.Editing { // focus left the dialog
+			d.Blur()
+			app.refreshCompress()
+		}
 	case WM_CHAR:
 		if d != nil {
 			d.Char(rune(wParam))
@@ -176,16 +197,27 @@ func compressProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 				hideCompress()
 			case 2:
 				d.Preset, d.Error = 0, ""
+				d.Blur()
 				app.refreshCompress()
 			case 3:
 				d.Preset, d.Error = 1, ""
+				d.Blur()
 				app.refreshCompress()
 			case 4:
 				d.Target = !d.Target
 				if d.Target && d.TargetMB == "" {
-					d.TargetMB = "100" // a real value, not a placeholder
+					d.TargetMB = d.DefaultTargetMB() // a real value, not a placeholder
 				}
 				d.Error = ""
+				if d.Target {
+					focusSizeBox(hwnd, d)
+				} else {
+					d.Blur()
+				}
+				app.refreshCompress()
+			case 5:
+				d.Error = ""
+				focusSizeBox(hwnd, d)
 				app.refreshCompress()
 			case 6:
 				app.compressStart()
@@ -195,6 +227,16 @@ func compressProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 	}
 	r, _, _ := pDefWindowProcW.Call(hwnd, msg, wParam, lParam)
 	return r
+}
+
+// focusSizeBox gives the size box the keyboard. The click is the user's
+// input to this window, so Windows lets it come to the front and receive
+// the typed digits (at open it may still be behind the drag source).
+func focusSizeBox(hwnd uintptr, d *ui.CompressDialog) {
+	pSetForegroundWindow.Call(hwnd)
+	fg, _, _ := pGetForegroundWindow.Call()
+	d.Focus()
+	logf("compress size box focused (dialog in front: %v)", fg == hwnd)
 }
 
 // compressStart checks the target size against the video's length, then

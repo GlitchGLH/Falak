@@ -58,6 +58,9 @@ type CompressDialog struct {
 	TargetMB      string  // what the user typed
 	OriginalBytes float64 // the size of the original file, for the smaller-than check
 	Error         string  // red line under the box
+	Editing       bool    // the size box has the keyboard focus
+	CaretOn       bool    // blink phase of the caret while editing
+	selected      bool    // the whole number is selected: the next digit replaces it
 	sizeText      string
 	base          *image.RGBA
 	work          *image.RGBA
@@ -101,26 +104,60 @@ func (d *CompressDialog) StartActive() bool {
 	return true
 }
 
-// Char edits the target-size field (digits and backspace only; Arabic-Indic
-// digits from an Arabic keyboard become western digits).
-func (d *CompressDialog) Char(r rune) {
+// DefaultTargetMB is the size offered when "Compress to a set size" is
+// turned on: 100 MB, or half the original (whole MB, at least 1) when the
+// original is 100 MB or smaller, so the offer is always below the original.
+func (d *CompressDialog) DefaultTargetMB() string {
+	if d.OriginalBytes > 0 && d.OriginalBytes <= 100e6 {
+		return strconv.Itoa(max(1, int(d.OriginalBytes/2/1e6)))
+	}
+	return "100"
+}
+
+// Focus gives the size box the keyboard: the number is shown selected, so
+// the first digit typed replaces it, and the caret is shown.
+func (d *CompressDialog) Focus() {
 	if !d.Target {
 		return
 	}
+	d.Editing, d.selected, d.CaretOn = true, d.TargetMB != "", true
+}
+
+// Blur takes the keyboard focus away from the size box.
+func (d *CompressDialog) Blur() { d.Editing, d.selected = false, false }
+
+// Char edits the target-size field while it has the focus (digits and
+// backspace only; Arabic-Indic digits from an Arabic keyboard become
+// western digits). At most 4 digits.
+func (d *CompressDialog) Char(r rune) {
+	if !d.Target || !d.Editing {
+		return
+	}
+	digit := rune(0)
+	switch {
+	case r >= '0' && r <= '9':
+		digit = r
+	case r >= '٠' && r <= '٩':
+		digit = r - '٠' + '0'
+	}
 	switch {
 	case r == '\b' || r == 127:
-		if n := len(d.TargetMB); n > 0 {
+		if d.selected {
+			d.TargetMB = ""
+		} else if n := len(d.TargetMB); n > 0 {
 			d.TargetMB = d.TargetMB[:n-1]
 		}
-	case r >= '0' && r <= '9':
-		if len(d.TargetMB) < 4 {
-			d.TargetMB += string(r)
+	case digit != 0:
+		if d.selected {
+			d.TargetMB = ""
 		}
-	case r >= '٠' && r <= '٩':
 		if len(d.TargetMB) < 4 {
-			d.TargetMB += string(r - '٠' + '0')
+			d.TargetMB += string(digit)
 		}
+	default:
+		return // anything else leaves the selection as it was
 	}
+	d.selected, d.CaretOn = false, true
 }
 
 // HitTest: 0 none, 1 the X, 2/3 the presets, 4 the checkbox, 5 the size
@@ -355,25 +392,45 @@ func (d *CompressDialog) Render() *image.RGBA {
 			dc.SetColor(color.NRGBA{0, 0, 0, 18})
 		}
 		dc.Fill()
-		dc.SetLineWidth(1.2 * s)
-		dc.SetColor(grey)
-		dc.Stroke()
+		if d.Editing { // focus state: an accent border (unfocused: none, as before)
+			dc.DrawRoundedRectangle(m+cdlgBox[0]*s, m+cdlgBox[1]*s, cdlgBox[2]*s, cdlgBox[3]*s, 8*s)
+			dc.SetLineWidth(2 * s)
+			dc.SetColor(Accent)
+			dc.Stroke()
+		}
 		if f := d.Fonts.Face(math.Round(14*s*4)/4, false); f != nil {
 			// the typed number at the side reading starts, "MB" beside it
 			dc.SetFontFace(f)
-			dc.SetColor(d.textCol())
 			num := d.TargetMB
-			if num == "" {
-				num = "100"
-				dc.SetColor(grey)
+			numCol := d.textCol()
+			if num == "" && !d.Editing {
+				num = d.DefaultTargetMB()
+				numCol = grey
 			}
-			t := Visual(num) + " MB"
+			vnum := Visual(num)
+			t := vnum + " MB"
 			tw, _ := dc.MeasureString(t)
+			nw, _ := dc.MeasureString(vnum)
 			nx := m + (cdlgW-36)*s - tw // right-aligned for English
 			if d.RTL {
 				nx = m + 36*s
 			}
-			dc.DrawString(t, nx, m+(cdlgBox[1]+24)*s+capHeightOf(f)/2)
+			base := m + (cdlgBox[1]+24)*s + capHeightOf(f)/2
+			capH := capHeightOf(f)
+			if d.Editing && d.selected && nw > 0 { // the selected number
+				dc.DrawRectangle(nx-2*s, base-capH-4*s, nw+4*s, capH+8*s)
+				dc.SetColor(color.NRGBA{Accent.R, Accent.G, Accent.B, 90})
+				dc.Fill()
+			}
+			dc.SetColor(numCol)
+			dc.DrawString(t, nx, base)
+			if d.Editing && d.CaretOn { // the caret after the number
+				cx := nx + nw + 1.5*s
+				dc.SetLineWidth(1.5 * s)
+				dc.SetColor(d.textCol())
+				dc.DrawLine(cx, base-capH-4*s, cx, base+4*s)
+				dc.Stroke()
+			}
 		}
 		tlx := m + 36*s
 		if d.RTL {
