@@ -229,6 +229,7 @@ func (h *HelpCard) Render() *image.RGBA {
 			dc.DrawString(t, x, yy+capH/2)
 		}
 		dc.Pop()
+		dc.ResetClip() // gg's Pop keeps the clip: without this the OK button below is never drawn
 	}
 
 	// OK button

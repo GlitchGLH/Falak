@@ -197,6 +197,12 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   recorded as deferred (`7d67d54`); old `deps` folder deleted (Q6); open questions answered.
 - Manual tests of the MB unit (`c504236`) and no-overwrite (`3bdb5b0`) passed on the owner's
   machine (details above).
+- "How to use" card: the OK button was never drawn (gg keeps the clip after `Pop()`, see
+  Mistakes); fixed with `dc.ResetClip()` in `ui/helpcard.go` (commit "help card draws its OK
+  button"), test `ui/helpcard_test.go`. The click area (`HitTest` = 2) was always there and
+  matches the drawn button. Other `Clip()` uses checked: `ui/panel.go` already calls
+  `ResetClip()` after `Pop()`, `ui/wheel.go` resets the clip without `Push`/`Pop`; the
+  `Push`/`Pop` in `ui/icons.go` and `ui/menu.go` have no clip.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
@@ -267,6 +273,14 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
      (output `build/FalakSetup-1.0.0.exe`), then delete `build/nsis`.
   3. `py installer/make_portable.py` → `build/Falak-1.0.0-portable.zip`.
 - Logs on the owner's machine: `%LOCALAPPDATA%\Falak\falak.log` (readable; very useful).
+- README screenshots: `shots_windows_test.go` (repo root, build tags `windows && shots`, so it
+  is never in Falak.exe nor in the normal tests) renders 20 PNGs off-screen with the app's
+  own drawing code, fonts and texts (it fails if a copied label pair is not in the app
+  source). Output `$SHOTS_OUT` (default `C:\Projects\falak-shots`), 200 % scale, sample
+  `Holiday.mp4` / 48.3 MB:
+  `go test -tags "shots wasm2go nodynamic" -run TestShots -count=1 .`
+  (As of the OK button commit the file is local and not committed yet; the owner decides in
+  screenshot stage 2.)
 
 ### Mistakes and dead ends (do not repeat)
 - Python edits through a bash heredoc mangled escapes: `\n\n` became real line breaks inside a
@@ -288,6 +302,13 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   ask the owner to delete instead of working around it.
 - The task list tool counts and the `git commit` exit codes hide failures in pipelines;
   check each gate's output, not just the last line.
+- **gg keeps the clip after `Pop()`**: `github.com/fogleman/gg`'s `Pop()` restores the state
+  but keeps the current mask, so after `Push(); …; Clip(); …; Pop()` everything drawn later
+  is still clipped. Call `ResetClip()` after `Pop()` (as `ui/panel.go` and now
+  `ui/helpcard.go` do). This hid the help card's OK button. Do not edit `vendor/`.
+- Checking a diff for Arabic lines with Python on Windows: read
+  `sys.stdin.buffer.read().decode("utf-8")`; plain `sys.stdin.read()` uses the ANSI code
+  page, matches no Arabic and silently reports 0.
 
 ---
 
