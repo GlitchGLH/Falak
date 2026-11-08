@@ -249,8 +249,13 @@ func (a *App) compressStart() {
 	plan := conv.CompressPlan{Strong: d.Preset == 1}
 	if d.Target {
 		mb := d.MB()
-		kbits := mb*8388.608/cdlgWin.duration - 128
-		if cdlgWin.duration <= 0 || kbits < 64 {
+		// Before FFmpeg is downloaded the length is unknown (0): the target
+		// is accepted and the job checks it again with the real length. If
+		// FFmpeg has arrived since the dialog opened, read the length now.
+		if cdlgWin.duration <= 0 && conv.HaveFFmpeg() {
+			cdlgWin.duration = conv.VideoDuration(cdlgWin.path)
+		}
+		if conv.TargetTooSmall(mb, cdlgWin.duration) {
 			d.Error = T("The target size is too small for this video", "الحجم المطلوب صغير جدًا لهذا الفيديو.")
 			a.refreshCompress()
 			return

@@ -613,6 +613,18 @@ func VideoDuration(path string) float64 {
 	return probe(path).duration
 }
 
+// TargetTooSmall reports whether targetMB is too small for a video of
+// duration seconds (about 128 kb/s goes to the sound, at least 64 kb/s must
+// be left for the picture). An unknown length (0, e.g. FFmpeg is not
+// downloaded yet) is never "too small": the job checks again with the real
+// length once FFmpeg is there.
+func TargetTooSmall(targetMB, duration float64) bool {
+	if duration <= 0 {
+		return false
+	}
+	return targetMB*8388.608/duration-128 < 64
+}
+
 func runVideoPlan(ctx context.Context, path string, plan CompressPlan, progress func(float64)) (string, error) {
 	if plan.TargetMB > 0 {
 		return compressTwoPass(ctx, path, plan.TargetMB, progress)
@@ -713,7 +725,7 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 		return "", errors.New(tr("Couldn't read the video's length", "تعذّر قراءة طول الفيديو"))
 	}
 	kbits := targetMB*8388.608/mi.duration - 128
-	if kbits < 64 {
+	if TargetTooSmall(targetMB, mi.duration) {
 		return "", errors.New(tr("The target size is too small for this video", "الحجم المطلوب صغير جدًا لهذا الفيديو."))
 	}
 	dst := uniquePath(path, "-compressed", ".mp4")
