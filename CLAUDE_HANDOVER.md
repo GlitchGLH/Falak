@@ -15,9 +15,9 @@ Falak (فلك — "orbit/celestial sphere", internal Go module name `raha`) is a
 conversion wheel for Windows 10/11 (x64)**. Drag any file with **Shift held**, and a frosted-glass
 radial wheel pops up around the cursor. Each slice is one target format or tool; drop on a slice
 to convert. It is fully bilingual (**English / Arabic with RTL mirroring**), light/dark aware,
-renders its whole UI itself (no system controls), and converts with bundled/open engines
-(FFmpeg, PDFium, qpdf, resvg, libavif/aom/dav1d/libwebp, a pure-Rust HEIC crate) downloaded
-on demand to `%TEMP%\falak-tools`. Author: **UncleGlitch**; license **MIT**;
+renders its whole UI itself (no system controls), and converts with open engines: FFmpeg,
+PDFium, qpdf and resvg are downloaded on demand to `%TEMP%\falak-tools`; libavif/aom/dav1d,
+libwebp and the pure-Rust `heic` decoder crate are embedded (WASM, transpiled to Go). Author: **UncleGlitch**; license **MIT**;
 repo **github.com/GlitchGLH/Falak** (public).
 
 ### Features
@@ -43,7 +43,7 @@ repo **github.com/GlitchGLH/Falak** (public).
   `schtasks`) so key state can be read while an elevated window has focus.
 
 ### Conversions per format (see README.md's table for the authoritative matrix)
-- **Images**: between JPG, PNG, WEBP, GIF, AVIF, TIFF, BMP, ICO, HEIC (input), plus **SVG**
+- **Images**: between JPG, PNG, WEBP, GIF, AVIF, TIFF, BMP, ICO, HEIC (input and output), plus **SVG**
   (render via resvg) and **RAW** (read-only input) — targets are filtered per source kind.
 - **PDF**: images→PDF (page-fitted), PDF→PNG/JPG, PDF→TXT; a JPG/PNG can become a **DOCX**
   (Word file with the picture page-fitted — no office suite needed).
@@ -121,8 +121,8 @@ tests: `lift_test.go`, `seam_test.go` (hover-seam regression), `menu_test.go`, `
 
 **`conv/` (engines/conversions)**: `conv.go` (items per category, dispatch) · `formats.go`
 (format tables) · `media.go` (image/video via FFmpeg, `videoToGIF`+`gifPalettePass`, 10 s cap,
-compress-to-size two-pass) · `gif_test.go` · `target_test.go` · `heif.go` (HEIC via pure-Rust
-crate cgo) · `imgdocx.go` (JPG/PNG→DOCX) · `office.go`+`office_windows.go` (DOCX) · `pdf.go` ·
+compress-to-size two-pass) · `gif_test.go` · `target_test.go` · `heif.go` (HEIC **output**:
+FFmpeg `libx265` encodes HEVC, `heif.go` writes the HEIF container itself) · `imgdocx.go` (JPG/PNG→DOCX) · `office.go`+`office_windows.go` (DOCX) · `pdf.go` ·
 `pdfium_windows.go`+`pdfium_other.go` (PDFium) · `qpdf.go` · `svg.go` (resvg) · `raw.go` ·
 `merge.go` · `metadata.go` · `sevenzip_write.go` · `text.go` · `textarchive.go` ·
 `wic_windows.go` (WIC codecs) · `lang.go` · `progress.go`(+test) · `tempfiles.go` ·
@@ -284,8 +284,12 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 - **Unimplemented/gated tools**: tools only appear enabled when they apply to the dragged
   file (e.g. WHITE/BLACK BG only for alpha-capable kinds, COMPRESS not for ICO, METADATA not
   for HEIC/ICO); archive input supports EXTRACT only.
-- **HEIC component license**: the HEIC decode path uses a pure-Rust crate (no LGPL); the
-  attribution sits in `THIRD_PARTY_LICENSES.txt` — keep it shipped in installer+portable.
+- **HEIC component license**: HEIC **input** is decoded by `github.com/gen2brain/heic`, which
+  embeds the pure-Rust `heic` crate v0.1.6 compiled to WASM and transpiled to Go (`wasm2go`
+  tag; CGo-free). The `nodynamic` tag turns off its optional libheif loading, so no
+  libheif/libde265 (LGPL) is used. HEIC **output** goes through the downloaded FFmpeg
+  (`libx265`, GPL build, fetched by the user at runtime, not shipped). The attribution sits in
+  `THIRD_PARTY_LICENSES.txt` — keep it shipped in installer+portable.
 - **Unsigned binaries**: SmartScreen warnings expected; the Microsoft FP review is the remedy.
 - **Untested on real Windows** (sandbox limits): silent install + shortcut targets, capture
   affinity log lines, GIF conversion against the user's BtbN ffmpeg build, drag CPU load,
