@@ -163,6 +163,7 @@ func helperOn() bool {
 // button reads as not pressed, i.e. Windows is hiding input from Falak.
 func (a *App) offerHelper() {
 	if helperAlive() {
+		logf("helper offer: not needed (the helper is running)")
 		return
 	}
 	if useHelperSetting() {
@@ -170,7 +171,10 @@ func (a *App) offerHelper() {
 		// 20 s. Not after a refused prompt, so a "No" is never asked again
 		// on every drag; the menu toggle starts it again.
 		if !helperDeclined && time.Since(helperLaunchedAt) > 20*time.Second {
+			logf("helper offer: the helper is on but not running; starting it again")
 			a.launchHelper()
+		} else {
+			logf("helper offer: the helper is on and starting; nothing to do")
 		}
 		return
 	}
@@ -181,6 +185,7 @@ func (a *App) offerHelper() {
 		return
 	}
 	helperAsked = true
+	logf("helper offer: asking whether to start the helper (once per session)")
 	msg := T("When you drag from the desktop, Windows hides the Shift key and mouse button from Falak, so the wheel can't appear there.\n\n"+
 		"The fix is a small helper with administrator rights whose only job is to read the keys and pass them to Falak. "+
 		"Windows will ask for your approval each time the helper starts.\n\nStart the helper now?",
@@ -199,11 +204,19 @@ func (a *App) offerHelper() {
 // desktop shows no wheel while the helper is off. A tray notification only:
 // it never shows Windows' administrator prompt.
 func (a *App) showHelperHint() {
-	if helperHint || helperAlive() || useHelperSetting() {
+	switch {
+	case helperHint:
+		logf("helper hint: not shown (already shown this session)")
+		return
+	case helperAlive():
+		logf("helper hint: not shown (the helper is running)")
+		return
+	case useHelperSetting():
+		logf("helper hint: not shown (the helper is turned on and starting)")
 		return
 	}
 	helperHint = true
-	logf("desktop drag without the helper: showing the hint (once per session)")
+	logf("helper hint: showing it (once per session)")
 	a.balloon(T("Desktop drags need the helper", "السحب من سطح المكتب يحتاج المساعد"),
 		T("Falak can't read the Shift key when dragging from the desktop unless the Key-reading helper is on. Turn it on from the Falak icon next to the clock.",
 			"لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب إلا بتشغيل «مساعد قراءة الأزرار». شغّله من أيقونة «فلك» بجانب الساعة."), false)
