@@ -1,0 +1,411 @@
+package webp
+
+import (
+	"encoding/binary"
+	"fmt"
+	"image"
+	"image/color"
+	"io"
+)
+
+func decode(r io.Reader, configOnly, decodeAll bool) (*WEBP, image.Config, error) {
+	var cfg image.Config
+	var data []byte
+	var err error
+
+	mod := newModule()
+
+	if configOnly {
+		data, err = io.ReadAll(io.LimitReader(r, webpMaxHeaderSize))
+		if err != nil {
+			return nil, cfg, fmt.Errorf("read: %w", err)
+		}
+	} else {
+		data, err = io.ReadAll(r)
+		if err != nil {
+			return nil, cfg, fmt.Errorf("read: %w", err)
+		}
+	}
+
+	inSize := len(data)
+
+	inPtr := mod.Xmalloc(int32(inSize))
+	defer mod.Xfree(inPtr)
+
+	ok := mod.write(inPtr, data)
+	if !ok {
+		return nil, cfg, ErrMemWrite
+	}
+
+	ptr := mod.Xmalloc(4 * 4)
+	defer mod.Xfree(ptr)
+
+	widthPtr := ptr
+	heightPtr := ptr + 4
+	countPtr := ptr + 8
+	animPtr := ptr + 12
+
+	all := int32(0)
+	if decodeAll {
+		all = 1
+	}
+
+	res := mod.Xdecode(inPtr, int32(inSize), 1, all, widthPtr, heightPtr, countPtr, animPtr, 0, 0)
+	if res == 0 {
+		return nil, cfg, ErrDecode
+	}
+
+	width, ok := mod.readUint32(widthPtr)
+	if !ok {
+		return nil, cfg, ErrMemRead
+	}
+
+	height, ok := mod.readUint32(heightPtr)
+	if !ok {
+		return nil, cfg, ErrMemRead
+	}
+
+	anim, ok := mod.readUint32(animPtr)
+	if !ok {
+		return nil, cfg, ErrMemRead
+	}
+
+	hasAnimation := anim != 0
+
+	cfg.Width = int(width)
+	cfg.Height = int(height)
+
+	cfg.ColorModel = color.NYCbCrAModel
+	if hasAnimation {
+		cfg.ColorModel = color.RGBAModel
+	}
+
+	if configOnly {
+		return nil, cfg, nil
+	}
+
+	delay := make([]int, 0)
+	images := make([]image.Image, 0)
+
+	if decodeAll || hasAnimation {
+		count, ok := mod.readUint32(countPtr)
+		if !ok {
+			return nil, cfg, ErrMemRead
+		}
+
+		size := cfg.Width * cfg.Height * 4
+
+		outPtr := mod.Xmalloc(int32(size * int(count)))
+		defer mod.Xfree(outPtr)
+
+		delayPtr := mod.Xmalloc(int32(4 * int(count)))
+		defer mod.Xfree(delayPtr)
+
+		res = mod.Xdecode(inPtr, int32(inSize), 0, all, widthPtr, heightPtr, countPtr, animPtr, delayPtr, outPtr)
+		if res == 0 {
+			return nil, cfg, ErrDecode
+		}
+
+		for i := 0; i < int(count); i++ {
+			out, ok := mod.read(outPtr+int32(i*size), int32(size))
+			if !ok {
+				return nil, cfg, ErrMemRead
+			}
+
+			img := image.NewRGBA(image.Rect(0, 0, cfg.Width, cfg.Height))
+			img.Pix = out
+
+			images = append(images, img)
+
+			d, ok := mod.readUint32(delayPtr + int32(i*4))
+			if !ok {
+				return nil, cfg, ErrMemRead
+			}
+
+			delay = append(delay, int(d))
+		}
+
+		ret := &WEBP{
+			Image: images,
+			Delay: delay,
+		}
+
+		return ret, cfg, nil
+	}
+
+	rect := image.Rect(0, 0, cfg.Width, cfg.Height)
+	w, h := rect.Dx(), rect.Dy()
+	cw := (rect.Max.X+1)/2 - rect.Min.X/2
+	ch := (rect.Max.Y+1)/2 - rect.Min.Y/2
+
+	i0 := 1*w*h + 0*cw*ch
+	i1 := 1*w*h + 1*cw*ch
+	i2 := 1*w*h + 2*cw*ch
+	i3 := 2*w*h + 2*cw*ch
+
+	size := i3
+
+	outPtr := mod.Xmalloc(int32(size))
+	defer mod.Xfree(outPtr)
+
+	res = mod.Xdecode(inPtr, int32(inSize), 0, all, widthPtr, heightPtr, countPtr, animPtr, 0, outPtr)
+	if res == 0 {
+		return nil, cfg, ErrDecode
+	}
+
+	out, ok := mod.read(outPtr, int32(size))
+	if !ok {
+		return nil, cfg, ErrMemRead
+	}
+
+	img := &image.NYCbCrA{
+		YCbCr: image.YCbCr{
+			Y:              out[:i0:i0],
+			Cb:             out[i0:i1:i1],
+			Cr:             out[i1:i2:i2],
+			SubsampleRatio: image.YCbCrSubsampleRatio420,
+			YStride:        w,
+			CStride:        cw,
+			Rect:           rect,
+		},
+		A:       out[i2:],
+		AStride: w,
+	}
+
+	images = append(images, img)
+
+	ret := &WEBP{
+		Image: images,
+		Delay: delay,
+	}
+
+	return ret, cfg, nil
+}
+
+func encode(w io.Writer, m image.Image, quality, method int, lossless, exact bool) error {
+	mod := newModule()
+
+	var data []byte
+	var colorspace int
+
+	var width = m.Bounds().Dx()
+	var height = m.Bounds().Dy()
+
+	switch img := m.(type) {
+	case *image.YCbCr:
+		i := imageToNRGBA(img)
+		data = i.Pix
+	case *image.NYCbCrA:
+		if img.SubsampleRatio == image.YCbCrSubsampleRatio420 {
+			cw := (width + 1) / 2
+			ch := (height + 1) / 2
+
+			// Pack the planes into the contiguous WEBP_YUV420A layout the wasm
+			// expects (Y, U, V, A with strides width/cw/cw/width), copying row by
+			// row so non-contiguous planes and strides wider than the row are
+			// handled correctly instead of reinterpreting img.Y as one big slice.
+			data = make([]byte, 2*width*height+2*cw*ch)
+
+			i0 := width * height
+			i1 := i0 + cw*ch
+			i2 := i1 + cw*ch
+
+			for y := 0; y < height; y++ {
+				yo := img.YOffset(img.Rect.Min.X, img.Rect.Min.Y+y)
+				copy(data[y*width:y*width+width], img.Y[yo:yo+width])
+
+				ao := img.AOffset(img.Rect.Min.X, img.Rect.Min.Y+y)
+				copy(data[i2+y*width:i2+y*width+width], img.A[ao:ao+width])
+			}
+
+			for y := 0; y < ch; y++ {
+				co := img.COffset(img.Rect.Min.X, img.Rect.Min.Y+2*y)
+				copy(data[i0+y*cw:i0+y*cw+cw], img.Cb[co:co+cw])
+				copy(data[i1+y*cw:i1+y*cw+cw], img.Cr[co:co+cw])
+			}
+
+			colorspace = 4 // WEBP_YUV420A
+		} else {
+			i := imageToNRGBA(img)
+			data = i.Pix
+		}
+	case *image.RGBA:
+		data = img.Pix
+	case *image.NRGBA:
+		data = img.Pix
+	default:
+		i := imageToNRGBA(img)
+		data = i.Pix
+	}
+
+	inPtr := mod.Xmalloc(int32(len(data)))
+	defer mod.Xfree(inPtr)
+
+	ok := mod.write(inPtr, data)
+	if !ok {
+		return ErrMemWrite
+	}
+
+	sizePtr := mod.Xmalloc(8)
+	defer mod.Xfree(sizePtr)
+
+	losslessVal := int32(0)
+	if lossless {
+		losslessVal = 1
+	}
+
+	exactVal := int32(0)
+	if exact {
+		exactVal = 1
+	}
+
+	outPtr := mod.Xencode(inPtr, int32(width), int32(height), sizePtr, int32(colorspace), int32(quality),
+		int32(method), losslessVal, exactVal)
+	defer mod.Xfree(outPtr)
+
+	size, ok := mod.readUint64(sizePtr)
+	if !ok {
+		return ErrMemRead
+	}
+
+	if size == 0 {
+		return ErrEncode
+	}
+
+	out, ok := mod.read(outPtr, int32(size))
+	if !ok {
+		return ErrMemRead
+	}
+
+	_, err := w.Write(out)
+	if err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+
+	return nil
+}
+
+func (m *module) write(ptr int32, data []byte) bool {
+	if ptr < 0 || int(ptr)+len(data) > len(m.memory) {
+		return false
+	}
+
+	copy(m.memory[ptr:], data)
+
+	return true
+}
+
+func (m *module) read(ptr, size int32) ([]byte, bool) {
+	if ptr < 0 || size < 0 || int(ptr)+int(size) > len(m.memory) {
+		return nil, false
+	}
+
+	return m.memory[ptr : ptr+size : ptr+size], true
+}
+
+func (m *module) readUint32(ptr int32) (uint32, bool) {
+	if ptr < 0 || int(ptr)+4 > len(m.memory) {
+		return 0, false
+	}
+
+	return load32(m.memory[ptr:]), true
+}
+
+func (m *module) readUint64(ptr int32) (uint64, bool) {
+	if ptr < 0 || int(ptr)+8 > len(m.memory) {
+		return 0, false
+	}
+
+	return load64(m.memory[ptr:]), true
+}
+
+func newModule() *module {
+	mod := newModuleRaw(&wasiHost{})
+	mod.X_initialize()
+
+	return mod
+}
+
+// wasiHost satisfies the module's wasi imports; libwebpmux only writes diagnostics, discarded here.
+type wasiHost struct {
+	mod *module
+}
+
+func (h *wasiHost) Init(m any) {
+	h.mod = m.(*module)
+}
+
+func (h *wasiHost) Xfd_close(fd int32) int32 {
+	return 0
+}
+
+func (h *wasiHost) Xfd_write(fd, iovs, iovsLen, nwrittenPtr int32) int32 {
+	mem := h.mod.memory
+
+	var written uint32
+	for i := int32(0); i < iovsLen; i++ {
+		written += load32(mem[iovs+i*8+4:])
+	}
+
+	store32(mem[nwrittenPtr:], written)
+
+	return 0
+}
+
+// encodeAnimation encodes the frames (concatenated RGBA, frameSize each) into an animated WEBP.
+func encodeAnimation(frames []byte, width, height, count int, delays []int, loopCount, quality, method int, lossless, exact bool) ([]byte, error) {
+	mod := newModule()
+
+	framesPtr := mod.Xmalloc(int32(len(frames)))
+	defer mod.Xfree(framesPtr)
+	if !mod.write(framesPtr, frames) {
+		return nil, ErrMemWrite
+	}
+
+	delayBuf := make([]byte, count*4)
+	for i := 0; i < count; i++ {
+		binary.LittleEndian.PutUint32(delayBuf[i*4:], uint32(delays[i]))
+	}
+
+	delaysPtr := mod.Xmalloc(int32(len(delayBuf)))
+	defer mod.Xfree(delaysPtr)
+	if !mod.write(delaysPtr, delayBuf) {
+		return nil, ErrMemWrite
+	}
+
+	sizePtr := mod.Xmalloc(8)
+	defer mod.Xfree(sizePtr)
+
+	losslessVal := int32(0)
+	if lossless {
+		losslessVal = 1
+	}
+
+	exactVal := int32(0)
+	if exact {
+		exactVal = 1
+	}
+
+	outPtr := mod.Xencode_animation(framesPtr, int32(width), int32(height), int32(count), delaysPtr,
+		int32(loopCount), int32(quality), int32(method), losslessVal, exactVal, sizePtr)
+	defer mod.Xfree(outPtr)
+
+	size, ok := mod.readUint64(sizePtr)
+	if !ok {
+		return nil, ErrMemRead
+	}
+
+	if outPtr == 0 || size == 0 {
+		return nil, ErrEncode
+	}
+
+	out, ok := mod.read(outPtr, int32(size))
+	if !ok {
+		return nil, ErrMemRead
+	}
+
+	cp := make([]byte, len(out))
+	copy(cp, out)
+
+	return cp, nil
+}

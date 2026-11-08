@@ -58,10 +58,10 @@ func TestAll(t *testing.T) {
 	f.Close()
 
 	srcs := []string{jp, pp,
-		copyFile(t, "../../deps/heic/testdata/test.heic", dir),
-		copyFile(t, "../../deps/heic/testdata/exif.heic", dir),
-		copyFile(t, "../../deps/avif/testdata/test_rot.avif", dir),
-		copyFile(t, "../../deps/webp/testdata/exif.webp", dir),
+		copyFile(t, "testdata/test.heic", dir),
+		copyFile(t, "testdata/exif.heic", dir),
+		copyFile(t, "testdata/test_rot.avif", dir),
+		copyFile(t, "testdata/exif.webp", dir),
 	}
 	for _, src := range srcs {
 		srcImg, err := Decode(src)

@@ -2,34 +2,36 @@
 
 ## Requirements
 
-- Go 1.24 or newer
+- Go 1.25 or newer (the module says `go 1.25.0`; GODEBUG defaults are kept
+  at Go 1.24 with `godebug default=go1.24`)
 - Windows for the app itself (the `ui` and `conv` packages also build on other
   systems, which is what the tests use)
+- NSIS 3.x (`makensis`) for the installer
 
 ## Dependencies
 
-All Go dependencies are pinned with `replace` directives in `go.mod` to a
-local `deps/` directory that must sit NEXT TO this folder (its parent):
+Every dependency is vendored in `vendor/` (`go mod vendor`), so a fresh clone
+builds offline, with no extra folders. All of them are unmodified upstream
+releases or commits; `go.sum` records their hashes. Three are pinned with
+`replace` to the exact versions Falak is built from, because other
+dependencies ask for newer ones:
 
-    falak-build/
-    ├── falak-src/   <- this repository
-    └── deps/        <- the pinned dependency copies
+- `golang.org/x/sys` v0.30.0
+- `github.com/ebitengine/purego` v0.8.4
+- `github.com/andybalholm/brotli` v1.1.0
 
-This is required, not a style choice: several dependencies are pinned to
-versions that do not exist upstream (`gen2brain/avif v0.0.0`,
-`gen2brain/heic v0.0.0`, `gen2brain/webp v0.0.0`, `srwiley/oksvg v0.0.0`,
-`srwiley/rasterx v0.0.0`) because they are wasm2go builds generated for this
-project. `go mod tidy` against the public module proxy cannot resolve them
-(it fails with `unknown revision v0.0.0`), so the standard public modules
-cannot replace them as-is.
+To change a dependency: edit `go.mod`, then run `go mod tidy` and
+`go mod vendor`, and commit `go.mod`, `go.sum` and `vendor/` together.
 
 ## Build
 
-    GOOS=windows GOARCH=amd64 go build -tags "wasm2go nodynamic" -ldflags "-s -w -H windowsgui" -trimpath -o Falak.exe .
+    GOOS=windows GOARCH=amd64 go build -tags "wasm2go nodynamic" -ldflags "-s -w -H windowsgui" -trimpath -o build/Falak.exe .
 
 ## Tests
 
     go test ./...
+
+FFmpeg-based tests use an `ffmpeg` on PATH and skip without one.
 
 ## Version resources
 

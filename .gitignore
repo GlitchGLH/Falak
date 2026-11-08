@@ -5,5 +5,8 @@
 # Windows build output
 *.exe
 
-# Dependencies kept next to the module root (see BUILDING.md)
+# Local build output
+build/
+
+# Old local dependency copies (no longer used: see vendor/)
 deps/

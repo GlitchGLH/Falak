@@ -1,0 +1,16 @@
+## avif
+[![Status](https://github.com/gen2brain/avif/actions/workflows/test.yml/badge.svg)](https://github.com/gen2brain/avif/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/avif.svg)](https://pkg.go.dev/github.com/gen2brain/avif)
+
+Go encoder/decoder for [AV1 Image File Format (AVIF)](https://en.wikipedia.org/wiki/AVIF) with support for animated AVIF images.
+
+Based on [libavif](https://github.com/AOMediaCodec/libavif) with [dav1d](https://code.videolan.org/videolan/dav1d) (decode) and [aom](https://aomedia.googlesource.com/aom/) (encode) compiled to [WASM](https://en.wikipedia.org/wiki/WebAssembly) and used with [wazero](https://wazero.io/) runtime (CGo-free).
+
+The library will first try to use a dynamic/shared library (if installed) via [purego](https://github.com/ebitengine/purego) and will fall back to WASM.
+
+For a pure Go alternative, see [gav1d](https://github.com/gen2brain/gav1d), an AV1 and AVIF decoder and encoder with SIMD support, no CGo/WASM and no dependencies.
+
+### Build tags
+
+* `nodynamic` - do not use dynamic/shared library (use only WASM)
+* `wasm2go` - transpile the WASM to pure Go with [wasm2go](https://github.com/ncruces/wasm2go) instead of running it with wazero
