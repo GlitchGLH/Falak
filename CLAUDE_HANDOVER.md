@@ -172,6 +172,13 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
     folder. Afterwards the placeholder was untouched (1 KB) and the output was saved as
     `Desktop 2026.11.06 - 19.45.12.04.DVR (1).wmv` (157,024 KB). Both test .wmv files were
     deleted afterwards; the original .mp4 is kept.
+- 2026-11-09, FINAL build (`57f35db`): Setup hash verified (`8a44dc4c…6e6da2c`); MP4 -> MP3
+  works; compress to 40 MB gave 38.7 MB (40,592,005 bytes); the How to use card shows the OK
+  button and no duplicate title.
+- VirusTotal, `FalakSetup-1.0.0.exe`: **1/71**, Microsoft: Undetected. Only Trapmine flagged
+  it (`Malicious.moderate.ml.score`, an ML false positive). **No new Microsoft report is
+  needed.** Report:
+  https://www.virustotal.com/gui/file/8a44dc4c52252f48a2559701b978cdb03fe30b2702f70fc931937c58c6e6da2c
 
 ### Owner's machine notes
 - Notifications are disabled by Chris Titus Tech WinUtil:
@@ -212,19 +219,18 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - README screenshots (commit "README screenshots"): 20 PNGs in `docs/` (see Section 7), shown
   in both README sections with English alt text; old `docs/tray-menu.png` and
   `docs/compress-dialog.png` removed.
-- Final build from `57f35db` (2026-11-09), hashes above.
+- Final build from `57f35db` (2026-11-09), hashes above; manual test on the owner's PC and
+  VirusTotal done (results above); Microsoft report not needed. RELEASE_NOTES.md has the
+  checksums, the VirusTotal link and the SmartScreen line; README.md links the scan.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
 ### IN PROGRESS
 - Nothing in progress. `build/` holds the FINAL build from `57f35db` (see above).
 
-### NEXT (in this order)
-1. Quick manual test of the final build on the owner's PC.
-2. VirusTotal scan and a new Microsoft false-positive report on the final
-   `FalakSetup-1.0.0.exe` (and the portable zip).
-3. GitHub release v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT license;
-   see Q1 below for how).
+### NEXT
+1. GitHub release v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT
+   license; see Q1 below for how). Phase 2, only after the owner's explicit approval.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to

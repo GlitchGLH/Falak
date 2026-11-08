@@ -64,6 +64,8 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 A portable version that needs no installation is attached to the release too.
 
+[VirusTotal scan of the 1.0.0 installer](https://www.virustotal.com/gui/file/8a44dc4c52252f48a2559701b978cdb03fe30b2702f70fc931937c58c6e6da2c)
+
 ## Key-reading helper (optional)
 
 When you drag from the desktop, Windows can hide the Shift key and the mouse
