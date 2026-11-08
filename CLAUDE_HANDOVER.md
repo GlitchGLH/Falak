@@ -467,8 +467,8 @@ find `${__FILEDIR__}/...` files.
 **`res/`** (**FROZEN sounds** `hover.wav`/`appear.wav`/`drop.wav`; `raha.ico`, `raha.rc`,
 `raha.manifest`, `icon-1024.png`).
 
-**`docs/`**: the README screenshots (Section 7) and the older `wheel-light-dark.png` (no longer
-used by the README).
+**`docs/`**: the README screenshots (Section 7). The older `wheel-light-dark.png` was removed
+on 2026-11-09 (commit "remove unused wheel-light-dark.png").
 
 ## 3. Build environment (exact) and commands
 
@@ -617,7 +617,7 @@ translated text), and `tray-menu-`, `compress-dialog-`, `progress-`, `how-to-use
 about 3.2 MB in total. The older `docs/tray-menu.png` and `docs/compress-dialog.png` were
 removed (on GitHub they are the owner's real screenshots; publishing replaces them).
 
-Older notes: `docs/wheel-light-dark.png` reproduction: `cmd/themeprev` renders four wheel sets
+Older notes (`docs/wheel-light-dark.png` was removed on 2026-11-09; kept for history): its reproduction: `cmd/themeprev` renders four wheel sets
 (`ToolItems("a.mp4")`, `ToolItems("a.png")`, `FormatItems("a.mp4")`, `ToolItems("a.wav")`)
 in two rows (light row then dark row) onto a sheet of `n=540` px cells (`sheet =
 540×len(sets)` wide, 1080 tall), each cell over a synthetic gradient background — light
