@@ -656,6 +656,10 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	tmp := tempFor(dst)
 	defer dropTemp(tmp)
 	passlog := tmp + "-pass"
+	// FFmpeg names its logs <passlog>-<stream>.log(.mbtree)(.temp); remove
+	// every one of them on any exit (done, failed or cancelled), before
+	// dropTemp runs, so the hidden .falak-tmp folder can go away.
+	defer removePassLogs(passlog)
 	nullDev := "/dev/null"
 	if runtime.GOOS == "windows" {
 		nullDev = "NUL"
@@ -685,9 +689,23 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	}); err != nil {
 		return "", err
 	}
-	os.Remove(passlog + ".log")
-	os.Remove(passlog + ".log.mbtree")
+	removePassLogs(passlog)
 	return dst, finishTemp(tmp, dst)
+}
+
+// removePassLogs deletes the two-pass log files that start with passlog.
+// (A directory listing, not filepath.Glob: folder names may contain '['.)
+func removePassLogs(passlog string) {
+	dir, prefix := filepath.Dir(passlog), filepath.Base(passlog)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), prefix) {
+			os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 // ---------- audio ----------
