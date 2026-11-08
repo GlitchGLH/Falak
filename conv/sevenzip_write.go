@@ -298,5 +298,5 @@ func to7Z(ctx context.Context, path string, progress func(float64)) (string, err
 		dropTemp(tmp)
 		return "", err
 	}
-	return dst, finishTemp(tmp, dst)
+	return finishTemp(tmp, dst)
 }

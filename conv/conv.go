@@ -330,32 +330,27 @@ func extFor(format string) string {
 
 // uniquePath returns dir/base+suffix+ext, adding " (n)" if it exists.
 func uniquePath(src, suffix, ext string) string {
-	dir := filepath.Dir(src)
 	base := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + suffix
-	p := filepath.Join(dir, base+ext)
-	for i := 1; ; i++ {
-		if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
-			return p
-		}
-		p = filepath.Join(dir, fmt.Sprintf("%s (%d)%s", base, i, ext))
-	}
+	return nameSeries{filepath.Dir(src), base, ext}.pick()
 }
 
-// writeAtomic writes via a temp file so a failed conversion leaves nothing behind.
-func writeAtomic(dst string, write func(io.Writer) error) error {
+// writeAtomic writes via a temp file so a failed conversion leaves nothing
+// behind. It returns the path written: dst, or the next free name if
+// something else took dst in the meantime (see finishTemp).
+func writeAtomic(dst string, write func(io.Writer) error) (string, error) {
 	tmp := tempFor(dst)
 	f, err := os.Create(tmp)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := write(f); err != nil {
 		f.Close()
 		dropTemp(tmp)
-		return err
+		return "", err
 	}
 	if err := f.Close(); err != nil {
 		dropTemp(tmp)
-		return err
+		return "", err
 	}
 	return finishTemp(tmp, dst)
 }
@@ -373,14 +368,14 @@ func convertP(path, target string, prog func(float64)) (string, error) {
 		// Embed the original JPEG data untouched (no re-compression).
 		if data, err := os.ReadFile(path); err == nil && jpegOrientation(data) <= 1 {
 			if pdf, ok := pdfFromJPEG(data); ok {
-				return dst, writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(pdf); return err })
+				return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(pdf); return err })
 			}
 		}
 	}
 	if target == "DOCX" {
-		return dst, writeAtomic(dst, func(w io.Writer) error { return writeImageDocx(w, img, path) })
+		return writeAtomic(dst, func(w io.Writer) error { return writeImageDocx(w, img, path) })
 	}
-	return dst, writeAtomic(dst, func(w io.Writer) error {
+	return writeAtomic(dst, func(w io.Writer) error {
 		return encodeP(w, img, target, losslessKind(Kind(path)), prog)
 	})
 }
@@ -536,7 +531,7 @@ func compressP(path string, prog func(float64)) (string, error) {
 		return "", errors.New(tr("The file is already compressed and can't get smaller", "الملف مضغوط بالفعل ولا يمكن تصغيره أكثر"))
 	}
 	dst := uniquePath(path, "-compressed", extFor(format))
-	return dst, writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(bb.Bytes()); return err })
+	return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(bb.Bytes()); return err })
 }
 
 func encodeQuantizedPNG(w io.Writer, img image.Image) error {
@@ -559,7 +554,7 @@ func transform(path, suffix string, f func(image.Image) image.Image, prog func(f
 	}
 	out := f(img)
 	dst := uniquePath(path, "-"+suffix, extFor(k))
-	return dst, writeAtomic(dst, func(w io.Writer) error {
+	return writeAtomic(dst, func(w io.Writer) error {
 		return encodeP(w, out, k, losslessKind(Kind(path)), prog)
 	})
 }

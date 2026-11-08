@@ -1,6 +1,7 @@
 package conv
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,15 +72,86 @@ func removeTemp(tmp string) {
 }
 
 // finishTemp moves finished work into place and tidies the hidden folder.
-func finishTemp(tmp, dst string) error {
-	err := retry(func() error { return os.Rename(tmp, dst) })
+// It never replaces anything: if dst was created while the job ran (by
+// another job or program), the work gets the next free name, made the same
+// way as at job start (uniquePath, uniqueDir, uniqueName). It returns the
+// path used.
+func finishTemp(tmp, dst string) (string, error) {
+	final := dst
+	err := retry(func() error {
+		final = dst
+		if _, err := os.Lstat(final); err == nil {
+			final = seriesFor(dst).pick()
+		}
+		return renameNoReplace(tmp, final)
+	})
 	if err != nil {
-		Logf("temp: could not move %s to %s: %v", tmp, dst, err)
+		Logf("temp: could not move %s to %s: %v", tmp, final, err)
 		removeTemp(tmp)
-		return err
+		return "", err
+	}
+	if final != dst {
+		Logf("temp: %s was created during the job; the result is %s", dst, final)
 	}
 	os.Remove(filepath.Dir(tmp)) // only succeeds once the folder is empty
-	return nil
+	return final, nil
+}
+
+// renameNoReplace moves from to to and fails (os.ErrExist) if to exists.
+// The Windows version asks Windows for exactly that in one step.
+var renameNoReplace = func(from, to string) error {
+	if _, err := os.Lstat(to); err == nil {
+		return &os.LinkError{Op: "rename", Old: from, New: to, Err: os.ErrExist}
+	}
+	return os.Rename(from, to)
+}
+
+// ---------- output names ----------
+
+// nameSeries is how an output is named: dir/base+ext, else
+// "base (1)ext", "base (2)ext" …
+type nameSeries struct{ dir, base, ext string }
+
+func (s nameSeries) name(i int) string {
+	if i == 0 {
+		return filepath.Join(s.dir, s.base+s.ext)
+	}
+	return filepath.Join(s.dir, fmt.Sprintf("%s (%d)%s", s.base, i, s.ext))
+}
+
+var (
+	seriesMu sync.Mutex
+	seriesOf = map[string]nameSeries{} // each picked name -> its series
+)
+
+// pick returns the first free name of the series and remembers the series,
+// so finishTemp can continue it if that name is taken by the end.
+func (s nameSeries) pick() string {
+	for i := 0; ; i++ {
+		p := s.name(i)
+		if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
+			seriesMu.Lock()
+			seriesOf[p] = s
+			seriesMu.Unlock()
+			return p
+		}
+	}
+}
+
+// seriesFor returns the series dst was picked from (or, for a name made
+// elsewhere, dst's own name followed by " (n)").
+func seriesFor(dst string) nameSeries {
+	seriesMu.Lock()
+	s, ok := seriesOf[dst]
+	seriesMu.Unlock()
+	if ok {
+		return s
+	}
+	ext := filepath.Ext(dst)
+	if st, err := os.Stat(dst); err == nil && st.IsDir() {
+		ext = ""
+	}
+	return nameSeries{filepath.Dir(dst), strings.TrimSuffix(filepath.Base(dst), ext), ext}
 }
 
 // dropTemp discards failed or cancelled work.

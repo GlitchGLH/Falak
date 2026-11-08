@@ -130,7 +130,7 @@ func runOffice(ctx context.Context, path, id string, progress func(float64)) (st
 			dropTemp(tmp)
 			return "", err
 		}
-		return root, finishTemp(tmp, root)
+		return finishTemp(tmp, root)
 	}
 	dst := uniquePath(path, "", "."+strings.ToLower(t))
 	tmp := tempFor(dst)
@@ -150,7 +150,7 @@ func runOffice(ctx context.Context, path, id string, progress func(float64)) (st
 		dropTemp(tmp)
 		return "", errors.New(tr("The office program didn't produce a file", "لم يُنتج برنامج Office ملفًا"))
 	}
-	return dst, finishTemp(tmp, dst)
+	return finishTemp(tmp, dst)
 }
 
 func officeMS(ctx context.Context, app, in, out string, format int) error {

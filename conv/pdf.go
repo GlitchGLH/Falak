@@ -149,7 +149,7 @@ func runPDFTool(ctx context.Context, path, id string, progress func(float64)) (s
 			return "", err
 		}
 		dst := uniquePath(path, "-rotated", ".pdf")
-		return dst, writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(b); return err })
+		return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(b); return err })
 	case "p:split":
 		if n == 1 {
 			return "", errors.New(tr("This PDF has only one page", "ملف PDF هذا يحتوي على صفحة واحدة فقط"))
@@ -178,7 +178,7 @@ func runPDFTool(ctx context.Context, path, id string, progress func(float64)) (s
 				progress(float64(i+1) / float64(n))
 			}
 		}
-		return root, finishTemp(tmp, root)
+		return finishTemp(tmp, root)
 	}
 	return "", errors.New(tr("This tool isn't available", "هذه الأداة غير متاحة"))
 }
@@ -202,7 +202,7 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 	}
 	if t == "TXT" {
 		dst := uniquePath(path, "", ".txt")
-		return dst, writeAtomic(dst, func(w io.Writer) error {
+		return writeAtomic(dst, func(w io.Writer) error {
 			w.Write([]byte{0xEF, 0xBB, 0xBF}) // UTF-8 BOM so Notepad reads Arabic correctly
 			for i := 0; i < n; i++ {
 				if i > 0 {
@@ -216,9 +216,9 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 			return nil
 		})
 	}
-	page := func(i int, dst string) error {
+	page := func(i int, dst string) (string, error) {
 		if err := ctx.Err(); err != nil {
-			return err
+			return "", err
 		}
 		// each page moves the bar through its own share
 		lo, hi := float64(i)/float64(n), float64(i+1)/float64(n)
@@ -226,7 +226,7 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 		img, err := doc.Render(i, PDFDPI)
 		stopR()
 		if err != nil {
-			return err
+			return "", err
 		}
 		return writeAtomic(dst, func(w io.Writer) error {
 			if progress == nil {
@@ -239,7 +239,7 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 	}
 	if n == 1 {
 		dst := uniquePath(path, "", extFor(t))
-		return dst, page(0, dst)
+		return page(0, dst)
 	}
 	// Several pages: one image per page, in a new folder beside the PDF.
 	base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
@@ -251,7 +251,7 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 	width := len(fmt.Sprint(n))
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("%s - %0*d%s", base, width, i+1, extFor(t))
-		if err := page(i, filepath.Join(tmp, name)); err != nil {
+		if _, err := page(i, filepath.Join(tmp, name)); err != nil {
 			dropTemp(tmp)
 			return "", err
 		}
@@ -259,7 +259,7 @@ func runPDF(ctx context.Context, path, id string, progress func(float64)) (strin
 			progress(float64(i+1) / float64(n))
 		}
 	}
-	return root, finishTemp(tmp, root)
+	return finishTemp(tmp, root)
 }
 
 // pdfToDOCX turns a PDF into a Word document with Microsoft Word's own
@@ -283,7 +283,7 @@ func pdfToDOCX(ctx context.Context, path string, progress func(float64)) (string
 		dropTemp(tmp)
 		return "", err
 	}
-	return dst, finishTemp(tmp, dst)
+	return finishTemp(tmp, dst)
 }
 
 func utf16ToString(u []uint16) string {

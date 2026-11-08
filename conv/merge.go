@@ -51,9 +51,9 @@ func Merge(ctx context.Context, paths []string, id string, progress func(float64
 		if err != nil {
 			return "", err
 		}
-		return dst, writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(b); return err })
+		return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(b); return err })
 	}
-	return dst, writeAtomic(dst, func(w io.Writer) error { return imagesToPDF(ctx, w, files, progress) })
+	return writeAtomic(dst, func(w io.Writer) error { return imagesToPDF(ctx, w, files, progress) })
 }
 
 // imagesToPDF writes one page per image, each page the size of its image.

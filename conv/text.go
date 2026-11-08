@@ -225,13 +225,13 @@ func runText(ctx context.Context, path, id string, progress func(float64)) (stri
 	switch t {
 	case "DOCX":
 		dst := uniquePath(path, "", ".docx")
-		return dst, writeAtomic(dst, func(w io.Writer) error { return writeDocx(w, lines) })
+		return writeAtomic(dst, func(w io.Writer) error { return writeDocx(w, lines) })
 	case "RTF":
 		dst := uniquePath(path, "", ".rtf")
-		return dst, writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, makeRTF(lines)); return err })
+		return writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, makeRTF(lines)); return err })
 	case "HTML":
 		dst := uniquePath(path, "", ".html")
-		return dst, writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, makeHTML(path, lines)); return err })
+		return writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, makeHTML(path, lines)); return err })
 	case "JPG", "PNG":
 		// the text is laid out into a PDF first, then each page becomes
 		// one image (the same naming as PDF to JPG/PNG)
@@ -247,7 +247,7 @@ func runText(ctx context.Context, path, id string, progress func(float64)) (stri
 		if err != nil {
 			return "", err
 		}
-		return dst, finishTemp(pdf, dst)
+		return finishTemp(pdf, dst)
 	}
 	return "", fmt.Errorf("unsupported %s", t)
 }
@@ -303,15 +303,15 @@ func pdfToImages(ctx context.Context, path, pdf, t string, progress func(float64
 		return "", errors.New(tr("The PDF has no pages", "ملف PDF لا يحتوي على صفحات"))
 	}
 	base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	page := func(i int, dst string, lo, hi float64) error {
+	page := func(i int, dst string, lo, hi float64) (string, error) {
 		if err := ctx.Err(); err != nil {
-			return err
+			return "", err
 		}
 		stopR := estimate(progress, lo, lo+(hi-lo)*0.3, 0.6)
 		img, err := doc.Render(i, PDFDPI)
 		stopR()
 		if err != nil {
-			return err
+			return "", err
 		}
 		return writeAtomic(dst, func(w io.Writer) error {
 			if progress == nil {
@@ -324,7 +324,7 @@ func pdfToImages(ctx context.Context, path, pdf, t string, progress func(float64
 	}
 	if n == 1 {
 		dst := uniquePath(path, "", extFor(t))
-		return dst, page(0, dst, 0, 1)
+		return page(0, dst, 0, 1)
 	}
 	root := uniqueDir(filepath.Dir(path), base+" - "+t)
 	tmp := tempFor(root)
@@ -335,7 +335,7 @@ func pdfToImages(ctx context.Context, path, pdf, t string, progress func(float64
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("%s - %0*d%s", base, width, i+1, extFor(t))
 		lo, hi := float64(i)/float64(n), float64(i+1)/float64(n)
-		if err := page(i, filepath.Join(tmp, name), lo, hi); err != nil {
+		if _, err := page(i, filepath.Join(tmp, name), lo, hi); err != nil {
 			dropTemp(tmp)
 			return "", err
 		}
@@ -343,7 +343,7 @@ func pdfToImages(ctx context.Context, path, pdf, t string, progress func(float64
 			progress(float64(i+1) / float64(n))
 		}
 	}
-	return root, finishTemp(tmp, root)
+	return finishTemp(tmp, root)
 }
 
 // textToSubs makes SRT or VTT from a plain text file: when it holds timed
@@ -374,7 +374,7 @@ func textToSubs(path, t string) (string, error) {
 		}
 	}
 	dst := uniquePath(path, "", "."+strings.ToLower(t))
-	return dst, writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, b.String()); return err })
+	return writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, b.String()); return err })
 }
 
 // lineCues times the non-empty lines of a plain text file from zero: each

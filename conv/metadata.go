@@ -39,7 +39,7 @@ func StripMetadata(path string) (string, error) {
 		return "", err
 	}
 	dst := uniquePath(path, "-clean", extFor(k))
-	return dst, writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(out); return err })
+	return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(out); return err })
 }
 
 func stripJPEG(d []byte) ([]byte, error) {

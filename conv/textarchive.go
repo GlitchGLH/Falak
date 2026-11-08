@@ -106,7 +106,7 @@ func runSubtitle(path, id string) (string, error) {
 		return "", fmt.Errorf("unsupported %s", t)
 	}
 	dst := uniquePath(path, "", "."+strings.ToLower(t))
-	return dst, writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, b.String()); return err })
+	return writeAtomic(dst, func(w io.Writer) error { _, err := io.WriteString(w, b.String()); return err })
 }
 
 // ---------- archives ----------
@@ -316,13 +316,7 @@ func archiveBase(path string) string {
 }
 
 func uniqueDir(parent, base string) string {
-	p := filepath.Join(parent, base)
-	for i := 1; ; i++ {
-		if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
-			return p
-		}
-		p = filepath.Join(parent, fmt.Sprintf("%s (%d)", base, i))
-	}
+	return nameSeries{parent, base, ""}.pick()
 }
 
 func runArchive(ctx context.Context, path, id string, progress func(float64)) (string, error) {
@@ -340,7 +334,7 @@ func runArchive(ctx context.Context, path, id string, progress func(float64)) (s
 				return "", err
 			}
 			defer gz.Close()
-			return dst, writeAtomic(dst, func(w io.Writer) error { _, err := io.Copy(w, gz); return err })
+			return writeAtomic(dst, func(w io.Writer) error { _, err := io.Copy(w, gz); return err })
 		}
 		root := uniqueDir(filepath.Dir(path), archiveBase(path))
 		tmp := tempFor(root)
@@ -381,7 +375,7 @@ func runArchive(ctx context.Context, path, id string, progress func(float64)) (s
 			dropTemp(tmp)
 			return "", err
 		}
-		return root, finishTemp(tmp, root)
+		return finishTemp(tmp, root)
 	}
 	t := strings.TrimPrefix(id, "to:")
 	if t == "RAR" {
@@ -392,7 +386,7 @@ func runArchive(ctx context.Context, path, id string, progress func(float64)) (s
 	}
 	ext := map[string]string{"ZIP": ".zip", "TAR": ".tar", "GZIP": ".tar.gz"}[t]
 	dst := filepath.Join(filepath.Dir(path), uniqueName(filepath.Dir(path), archiveBase(path)+ext))
-	return dst, writeAtomic(dst, func(w io.Writer) error {
+	return writeAtomic(dst, func(w io.Writer) error {
 		switch t {
 		case "ZIP":
 			zw := zip.NewWriter(w)
@@ -487,13 +481,7 @@ func uniqueName(dir, name string) string {
 		ext = filepath.Ext(name)
 		base = strings.TrimSuffix(name, ext)
 	}
-	n := name
-	for i := 1; ; i++ {
-		if _, err := os.Stat(filepath.Join(dir, n)); errors.Is(err, os.ErrNotExist) {
-			return n
-		}
-		n = fmt.Sprintf("%s (%d)%s", base, i, ext)
-	}
+	return filepath.Base(nameSeries{dir, base, ext}.pick())
 }
 
 func rarError(err error) error {
@@ -590,7 +578,7 @@ func toRAR(ctx context.Context, path string, progress func(float64)) (string, er
 		dropTemp(out)
 		return "", fmt.Errorf(tr("WinRAR couldn't create the archive: %s", "تعذّر على WinRAR إنشاء الأرشيف: %s"), lastLine(string(msg)))
 	}
-	return dst, finishTemp(out, dst)
+	return finishTemp(out, dst)
 }
 
 func sevenZipError(path string, err error) error {

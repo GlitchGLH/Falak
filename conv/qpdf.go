@@ -121,5 +121,5 @@ func compressPDF(ctx context.Context, path string, progress func(float64)) (stri
 	if progress != nil {
 		progress(0.99)
 	}
-	return dst, finishTemp(tmp, dst)
+	return finishTemp(tmp, dst)
 }

@@ -89,7 +89,7 @@ func gifToVideo(ctx context.Context, path, t string, progress func(float64)) (st
 			"-tune", "animation"}
 	}
 	args = append(args, "-fps_mode", "vfr", "-an")
-	return dst, ffmpeg(ctx, path, dst, args, mi.duration, progress)
+	return ffmpeg(ctx, path, dst, args, mi.duration, progress)
 }
 
 func extUpper(path string) string {
@@ -356,16 +356,17 @@ func probe(path string) mediaInfo {
 }
 
 // ffmpeg runs FFmpeg writing to dst (via a temporary file), reporting 0..1.
-func ffmpeg(ctx context.Context, src, dst string, args []string, duration float64, progress func(float64)) error {
+func ffmpeg(ctx context.Context, src, dst string, args []string, duration float64, progress func(float64)) (string, error) {
 	return ffmpegPre(ctx, nil, src, dst, args, duration, progress)
 }
 
 // ffmpegPre is ffmpeg with options placed before -i (e.g. fast seeking).
-func ffmpegPre(ctx context.Context, pre []string, src, dst string, args []string, duration float64, progress func(float64)) error {
+// It returns the path written (see finishTemp).
+func ffmpegPre(ctx context.Context, pre []string, src, dst string, args []string, duration float64, progress func(float64)) (string, error) {
 	tmp := tempFor(dst)
 	if err := ffmpegRaw(ctx, pre, src, tmp, args, duration, progress); err != nil {
 		dropTemp(tmp)
-		return err
+		return "", err
 	}
 	return finishTemp(tmp, dst)
 }
@@ -508,27 +509,27 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 			if mi.duration > 10 {
 				return "", errors.New(tr("GIF supports videos up to 10 seconds only", "صيغة GIF تدعم الفيديو حتى 10 ثوانٍ فقط"))
 			}
-			return dst, videoToGIF(ctx, path, dst, mi, progress)
+			return videoToGIF(ctx, path, dst, mi, progress)
 		}
 		if t == "MP3" && !mi.hasAudio {
 			return "", errors.New(tr("This video has no audio", "هذا الفيديو لا يحتوي على صوت"))
 		}
-		return dst, ffmpeg(ctx, path, dst, videoArgs(t, mi), mi.duration, progress)
+		return ffmpeg(ctx, path, dst, videoArgs(t, mi), mi.duration, progress)
 	case id == "v:compress":
 		return runVideoPlan(ctx, path, CompressPlan{}, progress)
 	case id == "v:metadata":
 		dst := uniquePath(path, "-clean", ext)
-		return dst, ffmpeg(ctx, path, dst, []string{"-map", "0", "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy"}, mi.duration, progress)
+		return ffmpeg(ctx, path, dst, []string{"-map", "0", "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy"}, mi.duration, progress)
 	case id == "v:mute":
 		dst := uniquePath(path, "-muted", ext)
-		return dst, ffmpeg(ctx, path, dst, []string{"-map", "0:v", "-c", "copy", "-an"}, mi.duration, progress)
+		return ffmpeg(ctx, path, dst, []string{"-map", "0:v", "-c", "copy", "-an"}, mi.duration, progress)
 	case id == "v:snapshot":
 		dst := uniquePath(path, "-snapshot", ".png")
 		at := 0.0
 		if mi.duration > 0 {
 			at = mi.duration / 2
 		}
-		return dst, ffmpegPre(ctx, []string{"-ss", fmt.Sprintf("%.3f", at)}, path, dst, []string{"-frames:v", "1"}, 0, progress)
+		return ffmpegPre(ctx, []string{"-ss", fmt.Sprintf("%.3f", at)}, path, dst, []string{"-frames:v", "1"}, 0, progress)
 	case id == "v:speed":
 		// twice as fast, sound included (pitch kept)
 		dst := uniquePath(path, "-2x", ".mp4")
@@ -537,7 +538,7 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 		if mi.hasAudio {
 			args = append(args, "-filter:a", "atempo=2.0", "-c:a", "aac", "-b:a", "192k")
 		}
-		return dst, ffmpeg(ctx, path, dst, args, mi.duration/2, progress)
+		return ffmpeg(ctx, path, dst, args, mi.duration/2, progress)
 	case id == "v:split":
 		// two halves, cut without re-encoding (no quality loss) at the
 		// key frame nearest the middle, into a folder beside the video
@@ -586,7 +587,7 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 			dropTemp(tmp)
 			return "", err
 		}
-		return root, finishTemp(tmp, root)
+		return finishTemp(tmp, root)
 	}
 	return "", errors.New(tr("This tool isn't available yet", "هذه الأداة غير متاحة بعد"))
 }
@@ -634,12 +635,12 @@ func runVideoPlan(ctx context.Context, path string, plan CompressPlan, progress 
 	if plan.Strong {
 		// Strong: the long side capped at 1280 px too — the biggest win
 		// at low bitrates.
-		return dst, ffmpeg(ctx, path, dst, []string{"-map", "0:v:0?", "-map", "0:a:0?",
+		return ffmpeg(ctx, path, dst, []string{"-map", "0:v:0?", "-map", "0:a:0?",
 			"-vf", "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
 			"-c:v", "libx264", "-preset", "veryfast", "-crf", "32",
 			"-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "96k"}, mi.duration, progress)
 	}
-	return dst, ffmpeg(ctx, path, dst, []string{"-map", "0:v:0?", "-map", "0:a:0?",
+	return ffmpeg(ctx, path, dst, []string{"-map", "0:v:0?", "-map", "0:a:0?",
 		"-vf", "scale='if(gt(ih,1080),-2,iw)':'min(ih,1080)'", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
 		"-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k"}, mi.duration, progress)
 }
@@ -650,7 +651,7 @@ func runVideoPlan(ctx context.Context, path string, plan CompressPlan, progress 
 // on its own sits at 0% until the very end), pass two maps the frames
 // onto it. Same filters, fps, scale and dithering as the old single
 // filter_complex. Cancellation works in both passes.
-func videoToGIF(ctx context.Context, path, dst string, mi mediaInfo, progress func(float64)) error {
+func videoToGIF(ctx context.Context, path, dst string, mi mediaInfo, progress func(float64)) (string, error) {
 	fps := "30"
 	if mi.fps > 0 && mi.fps < 30 {
 		fps = strconv.FormatFloat(mi.fps, 'f', 3, 64)
@@ -658,7 +659,7 @@ func videoToGIF(ctx context.Context, path, dst string, mi mediaInfo, progress fu
 	vf := "fps=" + fps + ",scale='min(1280,iw)':-2:flags=lanczos"
 	pal, err := os.CreateTemp("", "falak-palette-*.png")
 	if err != nil {
-		return err
+		return "", err
 	}
 	palName := pal.Name()
 	pal.Close()
@@ -668,7 +669,7 @@ func videoToGIF(ctx context.Context, path, dst string, mi mediaInfo, progress fu
 		nullDev = "NUL"
 	}
 	if err := gifPalettePass(ctx, path, palName, vf, nullDev, mi.duration, progress); err != nil {
-		return err
+		return "", err
 	}
 	return ffmpegPre(ctx, nil, path, dst, []string{"-i", palName,
 		"-filter_complex", "[0:v]" + vf + "[x];[x][1:v]paletteuse=dither=sierra2_4a:diff_mode=rectangle",
@@ -774,7 +775,7 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	}); err != nil {
 		return "", err
 	}
-	return dst, finishTemp(tmp, dst)
+	return finishTemp(tmp, dst)
 }
 
 // passDirPrefix names the private folders for two-pass logs in the system
@@ -877,14 +878,14 @@ func runAudio(ctx context.Context, path, id string, progress func(float64)) (str
 	case strings.HasPrefix(id, "to:"):
 		t := strings.TrimPrefix(id, "to:")
 		dst := uniquePath(path, "", "."+strings.ToLower(t))
-		return dst, ffmpeg(ctx, path, dst, append(vn, audioArgs(t, mi)...), mi.duration, progress)
+		return ffmpeg(ctx, path, dst, append(vn, audioArgs(t, mi)...), mi.duration, progress)
 	case id == "a:compress":
 		e, a := sameFormatArgs(own, true)
 		dst := uniquePath(path, "-compressed", e)
-		return dst, ffmpeg(ctx, path, dst, append(vn, a...), mi.duration, progress)
+		return ffmpeg(ctx, path, dst, append(vn, a...), mi.duration, progress)
 	case id == "a:metadata":
 		dst := uniquePath(path, "-clean", ext)
-		return dst, ffmpeg(ctx, path, dst, []string{"-map", "0:a", "-map_metadata", "-1", "-c", "copy"}, mi.duration, progress)
+		return ffmpeg(ctx, path, dst, []string{"-map", "0:a", "-map_metadata", "-1", "-c", "copy"}, mi.duration, progress)
 	case id == "a:normalize":
 		e, a := sameFormatArgs(own, false)
 		dst := uniquePath(path, "-normalized", e)
@@ -893,7 +894,7 @@ func runAudio(ctx context.Context, path, id string, progress func(float64)) (str
 			rate = "48000"
 		}
 		// loudnorm works at 192 kHz internally; keep the file's own rate.
-		return dst, ffmpeg(ctx, path, dst, append(append(vn, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", rate), a...), mi.duration, progress)
+		return ffmpeg(ctx, path, dst, append(append(vn, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", rate), a...), mi.duration, progress)
 	case id == "a:channels":
 		e, a := sameFormatArgs(own, false)
 		suffix, ch := "-mono", "1"
@@ -901,13 +902,13 @@ func runAudio(ctx context.Context, path, id string, progress func(float64)) (str
 			suffix, ch = "-stereo", "2"
 		}
 		dst := uniquePath(path, suffix, e)
-		return dst, ffmpeg(ctx, path, dst, append(append(vn, "-ac", ch), a...), mi.duration, progress)
+		return ffmpeg(ctx, path, dst, append(append(vn, "-ac", ch), a...), mi.duration, progress)
 	case id == "a:visualize":
 		dst := uniquePath(path, "-waveform", ".png")
 		// the picture appears only at the end: follow the expected time
 		stop := estimate(progress, 0, 0.99, 0.5+mi.duration/60)
 		defer stop()
-		return dst, ffmpeg(ctx, path, dst, []string{"-filter_complex",
+		return ffmpeg(ctx, path, dst, []string{"-filter_complex",
 			"aformat=channel_layouts=mono,showwavespic=s=2400x600:colors=0x007AFF:scale=sqrt", "-frames:v", "1"}, 0, progress)
 	}
 	return "", errors.New(tr("This tool isn't available yet", "هذه الأداة غير متاحة بعد"))
