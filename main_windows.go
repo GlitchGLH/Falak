@@ -212,6 +212,15 @@ func main() {
 	startedAtLogin := len(os.Args) > 1 && os.Args[1] == "--startup"
 	if firstRun() {
 		app.balloon(T("Falak is running", "فلك يعمل الآن"), T("Drag a file and press Shift while dragging to bring up the wheel.", "اسحب ملفًا واضغط Shift أثناء السحب لتظهر العجلة."), false)
+		// Windows may silence the notification, so the very first run also
+		// opens the How to use card. Never when Windows started Falak at
+		// sign-in ("Start with Windows"); firstRun is true only once.
+		if !startedAtLogin {
+			logf("first run: opening How to use")
+			app.showHelp()
+		} else {
+			logf("first run at sign-in: How to use not opened")
+		}
 	} else if !startedAtLogin {
 		app.balloon(T("Falak is running in the background", "فلك يعمل في الخلفية"), T("Drag a file and press Shift while dragging.", "اسحب ملفًا واضغط Shift أثناء السحب."), false)
 	}
