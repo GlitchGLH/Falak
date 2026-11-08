@@ -61,14 +61,19 @@ Var DesktopHnd
 Var StartupHnd
 
 ; Close a running Falak quietly: graceful close, wait 3 s, then end it.
+; Every nsExec::Exec pushes its exit code; each one is popped so nothing is
+; left on the stack for later code to read by mistake.
 !macro CloseFalak
   nsExec::Exec 'schtasks /End /TN "Falak\KeysHelper"'
+  Pop $0
   nsExec::Exec 'taskkill /IM Falak.exe'
+  Pop $0
   Sleep 3000
   nsExec::Exec 'cmd /c tasklist /FI "IMAGENAME eq Falak.exe" | find /I "Falak.exe" > NUL'
   Pop $0
   ${If} $0 == 0
     nsExec::Exec 'taskkill /F /IM Falak.exe'
+    Pop $0
   ${EndIf}
   Sleep 500
 !macroend
@@ -135,13 +140,11 @@ SectionEnd
 
 Section Uninstall
   !insertmacro CloseFalak
-  ${IfNot} ${Silent}
-    MessageBox MB_YESNO "$(DelSettings)"
-    Pop $0
-  ${EndIf}
-  ${If} $0 == 7
-    DeleteRegKey HKCU "Software\Falak"
-  ${EndIf}
+  ; MessageBox reports the answer by jumping, not on the stack. Yes (and a
+  ; silent uninstall, via /SD) keeps the settings; No deletes them.
+  MessageBox MB_YESNO "$(DelSettings)" /SD IDYES IDYES keepSettings
+  DeleteRegKey HKCU "Software\Falak"
+  keepSettings:
   DeleteRegValue HKCU "${RunKey}" "Falak"
   DeleteRegValue HKCU "${RunKey}" "Raha"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "Falak"
@@ -153,8 +156,8 @@ Section Uninstall
   nsExec::Exec 'powershell -NoProfile -ExecutionPolicy Bypass -File "$TEMP\falak-cleanup.ps1"'
   Pop $0
   Delete "$TEMP\falak-cleanup.ps1"
-  Pop $0
   nsExec::Exec 'schtasks /Delete /TN "Falak\KeysHelper" /F'
+  Pop $0
   Delete "$SMPROGRAMS\Falak.lnk"
   Delete "$DESKTOP\Falak.lnk"
   RMDir "$SMPROGRAMS"
