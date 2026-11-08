@@ -25,5 +25,9 @@ commands, decision history and current state.
 
 ## Temporary rule
 
-- **Never touch `Falak-1.0.0-release`** (read, move, rebuild or overwrite):
-  a Microsoft false-positive review on the hashes of its files is pending.
+- **`Falak-1.0.0-release` must never be modified** (no writing, moving,
+  extracting into it, rebuilding or overwriting), and may be **read only with
+  the owner's explicit permission**: a Microsoft false-positive review on the
+  hashes of its files is pending. Both copies:
+  - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
+  - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
