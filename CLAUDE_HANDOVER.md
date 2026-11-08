@@ -7,9 +7,56 @@ section wins over anything older below it. Arabic is quoted character for charac
 
 ### Where things are
 - Repository: `C:\Projects\Falak`, git branch `main`, local config `core.autocrlf=false`,
-  `user.name=UncleGlitch`, `user.email=GlitchGLH@users.noreply.github.com` (local only; the
-  owner may change it). History starts at `8816700` (import of the handed-over state). Nothing
-  has been pushed to GitHub.
+  `user.name=UncleGlitch`, `user.email=135931273+GlitchGLH@users.noreply.github.com` (local
+  only; the owner's choice, 2026-11-09). History starts at `e29e934` (import of the handed-over
+  state). Nothing has been pushed to GitHub.
+- **Email rewrite (2026-11-09):** every commit from the import to `bcd19cc` was rewritten with
+  `git filter-branch --env-filter` to author and committer
+  `UncleGlitch <135931273+GlitchGLH@users.noreply.github.com>`. Trees, messages, names and
+  dates are unchanged (`git diff backup-before-email bcd19cc` is empty; every commit pair has
+  the same tree). The old history is kept in the local branch `backup-before-email` (never push
+  it). Commit messages written before the rewrite still quote the old hashes; map them with
+  this table (old -> new):
+
+  | Old | New |
+  |---|---|
+  | `8816700` | `e29e934` |
+  | `a0456db` | `30476e0` |
+  | `d4b9569` | `fa55486` |
+  | `b3a7987` | `8d56baf` |
+  | `7565407` | `7a081a1` |
+  | `79b7d5c` | `fc5e411` |
+  | `3db401c` | `657d478` |
+  | `f6eedbc` | `ae9fbcb` |
+  | `4901549` | `7aed3ae` |
+  | `cf15b37` | `256b8da` |
+  | `0f3acfe` | `b8bbda8` |
+  | `14462d5` | `8bd429d` |
+  | `9821259` | `3c96dbb` |
+  | `b32152d` | `fae66c4` |
+  | `6081f23` | `c5be6f9` |
+  | `c311c4e` | `af994d0` |
+  | `bd93a63` | `8096641` |
+  | `50cdd9d` | `58c30f9` |
+  | `48618a9` | `04bb412` |
+  | `3967648` | `b759137` |
+  | `d8c6433` | `50e2895` |
+  | `1dbcfbd` | `b57ba4f` |
+  | `4fc1ea2` | `1df38b2` |
+  | `7516d74` | `8439bc2` |
+  | `bc37f7d` | `4f45c70` |
+  | `8ea1363` | `d122770` |
+  | `a52b66c` | `405e2a7` |
+  | `1927fab` | `b98e64c` |
+  | `0b40241` | `26f752d` |
+  | `06b34cd` | `53fee02` |
+  | `7e0b4eb` | `37d6258` |
+  | `ed09f1c` | `312d695` |
+  | `87d522e` | `aecd928` |
+  | `fd5b793` | `c504236` |
+  | `6618323` | `3bdb5b0` |
+  | `788ec66` | `7d67d54` |
+  | `b178c76` | `bcd19cc` |
 - Working tree clean after this handover commit.
 - Version: still **1.0.0** everywhere.
 - Release folders (Microsoft false-positive review pending on their hashes): never modify;
@@ -30,42 +77,42 @@ owner asks (NEXT item 3 is the final build).
 ### Commits since the import
 | Commit | Title | Purpose |
 |---|---|---|
-| `8816700` | import current state into git | First commit of the handed-over 1.0.0 source (old history is not in this repo). |
-| `a0456db` | uninstaller reads the keep-settings answer correctly | `MessageBox … IDYES` jump instead of `Pop $0` (it read a leftover nsExec code); every nsExec result popped. |
-| `d4b9569` | uninstaller removes only the files it installed | No `RMDir /r "$INSTDIR"`; deletes its own files, `RMDir` only when empty; audit check. |
-| `b3a7987` | video compress no longer blocks other conversions | `engineMu` held only for the FFmpeg download, not the whole encode. |
-| `7565407` | handover HEIC notes match the code | HEIC input = gen2brain/heic (pure-Rust crate, WASM→Go); output = FFmpeg libx265 + own HEIF container. |
-| `79b7d5c` | video compress-to-size works with current FFmpeg | `-pass:v` / `-passlogfile:v` (plain `-pass 2` hit the AAC stream). |
-| `3db401c` | compress leaves no two-pass logs in .falak-tmp | Removed `-0.log*` logs; test checks `.falak-tmp` is gone. |
-| `f6eedbc` | GIF progress test uses a 9 s clip | Test was timing-flaky on fast machines. |
-| `4901549` | key helper asks UAC each time; no scheduled task | Removed silent-elevation task `Falak\KeysHelper`; helper/installer/uninstaller delete an old one. |
-| `cf15b37` | NSIS script compiles with makensis on Windows | `${__FILEDIR__}\…` backslashes (Windows makensis 3.13 failed on `/`); audit check. |
-| `0f3acfe` | uninstaller without PowerShell; Falak closed by message | NSIS `EnumRegValue` loop for Layers; `wmQuitUpdate` (0x8009) to `FalakMsg`, wait 5 s, then `taskkill /F`, +3 s for the helper. |
-| `14462d5` | helper prompt says approval is asked each time | Owner text: EN "Windows will ask for your approval each time the helper starts." AR «سيطلب ويندوز موافقتك في كل مرة يعمل فيها المساعد.» |
-| `9821259` | engines pinned to fixed releases with SHA-256 checks | `conv/engines.go`, `falak-engine.txt`, hash check, `enginesnet` test. |
-| `b32152d` | engines live in %LOCALAPPDATA%\Falak\tools | Engines out of the install folder; old `Programs\Falak\tools` removed. |
-| `6081f23` | one install folder when the user picks their own | `installDir()` = installer's InstallLocation; old second copy removed; `InstallDirRegKey`. |
-| `c311c4e` | vendor the dependencies; builds from a fresh clone | `vendor/` + `go.sum`, no `../deps`; all deps proven unmodified upstream; 3 version replaces; `godebug default=go1.24`; test images in `conv/testdata`. |
-| `bd93a63` | docs match the review changes | README (English part), notices, licenses (x/sync dropped), handovers. |
-| `50cdd9d` | CLAUDE.md with the permanent rules | Rule file at repo root. |
-| `48618a9` | Arabic README matches the review changes | Owner's Arabic: uninstall sentence, helper section, pinned-engines sentence. |
-| `3967648` | portable README.txt in the repo | `installer/portable/README.txt`, owner's EN+AR text. |
-| `d8c6433` | build step for the portable zip | `installer/make_portable.py` (deterministic zip of exactly 3 files) + audit check. |
-| `1dbcfbd` | CLAUDE.md release-folder rule: read only with permission | Both release-folder paths listed. |
-| `4fc1ea2` | compress to a set size works in watched folders; failures shown | Pass logs in `%TEMP%\falak-pass-*`; `completePassLogs` renames x264's `*.temp` logs with retry; FFmpeg errors logged (args + last 15 stderr lines) and the specific line shown; failed jobs also show a message box. |
-| `7516d74` | the target size box can be focused and edited | Focus, caret, selection, Enter; default 100 MB or half the original (≤ 100 MB). |
-| `bc37f7d` | no leftovers in .falak-tmp after failed or interrupted jobs | Delete/move retry 5 s; `temp-folders.txt` record; start-up cleanup of stale `<UnixNano>-<n>…` entries only. |
-| `8ea1363` | helper menu item shows whether the helper really runs | Toggle = helper running; refusing UAC turns the setting off. |
-| `a52b66c` | once-per-session hint when a desktop drag needs the helper | Owner text (see below), tray balloon. |
-| `1927fab` | log every helper hint/offer attempt and tray notification | Logs Shell_NotifyIcon result + notification settings (read only). |
-| `0b40241` | helper hint also shown in a Falak window | Message box in addition to the balloon (balloons are silenced on the owner's machine). |
-| `06b34cd` | first run also opens the How to use card | Only on the very first run, never with `--startup`. |
-| `7e0b4eb` | background job done: the progress window shows Done briefly | 2.5 s, no focus, X / new drag close it, not over the wheel or another panel. |
-| `ed09f1c` | session handover | This section (2026-11-08/09). |
-| `87d522e` | compress to a set size works before FFmpeg is downloaded | The dialog read the length with FFmpeg at open; on a fresh install it was 0 and every target was "too small". `conv.TargetTooSmall`: unknown length is never too small; the job checks again after the download. |
-| `fd5b793` | compress to a set size counts MB like File Explorer | `ui.BytesPerMB = 1,048,576` for "smaller than the original", the red hint and the default offer (the bitrate already used it). Answer to Q4. |
-| `6618323` | a finished file never replaces a file that already exists | `finishTemp` moves with `renameNoReplace` (Windows `MoveFileEx` without replace) and continues the start-time " (n)" series (`nameSeries`); output helpers return the real path. Answer to Q5a. |
-| `788ec66` | handover records portable downgrade and wmQuitUpdate as deferred | Q5b, Q5c. |
+| `e29e934` | import current state into git | First commit of the handed-over 1.0.0 source (old history is not in this repo). |
+| `30476e0` | uninstaller reads the keep-settings answer correctly | `MessageBox … IDYES` jump instead of `Pop $0` (it read a leftover nsExec code); every nsExec result popped. |
+| `fa55486` | uninstaller removes only the files it installed | No `RMDir /r "$INSTDIR"`; deletes its own files, `RMDir` only when empty; audit check. |
+| `8d56baf` | video compress no longer blocks other conversions | `engineMu` held only for the FFmpeg download, not the whole encode. |
+| `7a081a1` | handover HEIC notes match the code | HEIC input = gen2brain/heic (pure-Rust crate, WASM→Go); output = FFmpeg libx265 + own HEIF container. |
+| `fc5e411` | video compress-to-size works with current FFmpeg | `-pass:v` / `-passlogfile:v` (plain `-pass 2` hit the AAC stream). |
+| `657d478` | compress leaves no two-pass logs in .falak-tmp | Removed `-0.log*` logs; test checks `.falak-tmp` is gone. |
+| `ae9fbcb` | GIF progress test uses a 9 s clip | Test was timing-flaky on fast machines. |
+| `7aed3ae` | key helper asks UAC each time; no scheduled task | Removed silent-elevation task `Falak\KeysHelper`; helper/installer/uninstaller delete an old one. |
+| `256b8da` | NSIS script compiles with makensis on Windows | `${__FILEDIR__}\…` backslashes (Windows makensis 3.13 failed on `/`); audit check. |
+| `b8bbda8` | uninstaller without PowerShell; Falak closed by message | NSIS `EnumRegValue` loop for Layers; `wmQuitUpdate` (0x8009) to `FalakMsg`, wait 5 s, then `taskkill /F`, +3 s for the helper. |
+| `8bd429d` | helper prompt says approval is asked each time | Owner text: EN "Windows will ask for your approval each time the helper starts." AR «سيطلب ويندوز موافقتك في كل مرة يعمل فيها المساعد.» |
+| `3c96dbb` | engines pinned to fixed releases with SHA-256 checks | `conv/engines.go`, `falak-engine.txt`, hash check, `enginesnet` test. |
+| `fae66c4` | engines live in %LOCALAPPDATA%\Falak\tools | Engines out of the install folder; old `Programs\Falak\tools` removed. |
+| `c5be6f9` | one install folder when the user picks their own | `installDir()` = installer's InstallLocation; old second copy removed; `InstallDirRegKey`. |
+| `af994d0` | vendor the dependencies; builds from a fresh clone | `vendor/` + `go.sum`, no `../deps`; all deps proven unmodified upstream; 3 version replaces; `godebug default=go1.24`; test images in `conv/testdata`. |
+| `8096641` | docs match the review changes | README (English part), notices, licenses (x/sync dropped), handovers. |
+| `58c30f9` | CLAUDE.md with the permanent rules | Rule file at repo root. |
+| `04bb412` | Arabic README matches the review changes | Owner's Arabic: uninstall sentence, helper section, pinned-engines sentence. |
+| `b759137` | portable README.txt in the repo | `installer/portable/README.txt`, owner's EN+AR text. |
+| `50e2895` | build step for the portable zip | `installer/make_portable.py` (deterministic zip of exactly 3 files) + audit check. |
+| `b57ba4f` | CLAUDE.md release-folder rule: read only with permission | Both release-folder paths listed. |
+| `1df38b2` | compress to a set size works in watched folders; failures shown | Pass logs in `%TEMP%\falak-pass-*`; `completePassLogs` renames x264's `*.temp` logs with retry; FFmpeg errors logged (args + last 15 stderr lines) and the specific line shown; failed jobs also show a message box. |
+| `8439bc2` | the target size box can be focused and edited | Focus, caret, selection, Enter; default 100 MB or half the original (≤ 100 MB). |
+| `4f45c70` | no leftovers in .falak-tmp after failed or interrupted jobs | Delete/move retry 5 s; `temp-folders.txt` record; start-up cleanup of stale `<UnixNano>-<n>…` entries only. |
+| `d122770` | helper menu item shows whether the helper really runs | Toggle = helper running; refusing UAC turns the setting off. |
+| `405e2a7` | once-per-session hint when a desktop drag needs the helper | Owner text (see below), tray balloon. |
+| `b98e64c` | log every helper hint/offer attempt and tray notification | Logs Shell_NotifyIcon result + notification settings (read only). |
+| `26f752d` | helper hint also shown in a Falak window | Message box in addition to the balloon (balloons are silenced on the owner's machine). |
+| `53fee02` | first run also opens the How to use card | Only on the very first run, never with `--startup`. |
+| `37d6258` | background job done: the progress window shows Done briefly | 2.5 s, no focus, X / new drag close it, not over the wheel or another panel. |
+| `312d695` | session handover | This section (2026-11-08/09). |
+| `aecd928` | compress to a set size works before FFmpeg is downloaded | The dialog read the length with FFmpeg at open; on a fresh install it was 0 and every target was "too small". `conv.TargetTooSmall`: unknown length is never too small; the job checks again after the download. |
+| `c504236` | compress to a set size counts MB like File Explorer | `ui.BytesPerMB = 1,048,576` for "smaller than the original", the red hint and the default offer (the bitrate already used it). Answer to Q4. |
+| `3bdb5b0` | a finished file never replaces a file that already exists | `finishTemp` moves with `renameNoReplace` (Windows `MoveFileEx` without replace) and continues the start-time " (n)" series (`nameSeries`); output helpers return the real path. Answer to Q5a. |
+| `7d67d54` | handover records portable downgrade and wmQuitUpdate as deferred | Q5b, Q5c. |
 
 UX 5 hint texts (owner-approved, in `helper_windows.go`):
 - Title EN "Desktop drags need the helper" / AR «السحب من سطح المكتب يحتاج المساعد»
@@ -97,14 +144,14 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   SVG→PNG work.
 - Compress to a set size from `G:\NVIDIA\Desktop` at 60 MB and 40 MB completed, with the
   editable size field (caret, focus border), and no `.falak-tmp` was left behind.
-- 2026-11-09 (builds from `7e0b4eb` and `87d522e`):
+- 2026-11-09 (builds from `37d6258` and `aecd928`):
   - First-run "How to use" card: opens only on the first run; not after Quit and restart,
     not with Start with Windows.
   - Uninstall answering «لا» deletes the settings (`HKCU\Software\Falak`, including
     `Welcomed`) and the tools (`%LOCALAPPDATA%\Falak\tools`).
   - The "Done" window comes back after a background job, closes by itself, does not steal
     the focus and plays no new sound.
-  - Compress to 40 MB on a fresh install without FFmpeg worked (`87d522e`): FFmpeg was
+  - Compress to 40 MB on a fresh install without FFmpeg worked (`aecd928`): FFmpeg was
     downloaded first, output 38 MB.
   - Custom folder `C:\FalakTest`: the uninstaller removed only Falak's files and kept
     `keep.txt`; answering «نعم» kept the settings (`Welcomed`), and the card did not open
@@ -120,7 +167,7 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   is not a first run.
 - After a restart the wheel appears on desktop drags **without** the helper (log: drag from
   explorer.exe, `held=true dragging=true rawL=0x8000`, wheel shown). So the helper hint
-  window (`0b40241`) cannot be tested on this machine.
+  window (`26f752d`) cannot be tested on this machine.
 - SteelSeries Sonar is installed and may be why the wheel appear sound is sometimes not
   heard (the stream closes after 20 s idle; `appear.wav` is 100 ms). **No sound change was
   made.**
@@ -132,9 +179,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Code review findings fixed (uninstaller, compress lock, helper elevation, PowerShell,
   pinned engines, one install folder, vendoring, temp leftovers, compress in watched
   folders, editable size box, helper state/hint, first-run card, background "Done").
-- 2026-11-09: compress to a set size before FFmpeg is downloaded (`87d522e`); one MB unit
-  (Q4, `fd5b793`); a finished file never replaces an existing one (Q5a, `6618323`); Q5b/Q5c
-  recorded as deferred (`788ec66`); old `deps` folder deleted (Q6); open questions answered.
+- 2026-11-09: compress to a set size before FFmpeg is downloaded (`aecd928`); one MB unit
+  (Q4, `c504236`); a finished file never replaces an existing one (Q5a, `3bdb5b0`); Q5b/Q5c
+  recorded as deferred (`7d67d54`); old `deps` folder deleted (Q6); open questions answered.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
@@ -143,8 +190,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   for NEXT 1.
 
 ### NEXT (in this order)
-1. Quick manual test of `fd5b793` (size box counts MB like Explorer: a target equal to the
-   size Explorer shows is refused, one less is accepted) and `6618323` (a file created under
+1. Quick manual test of `c504236` (size box counts MB like Explorer: a target equal to the
+   size Explorer shows is refused, one less is accepted) and `3bdb5b0` (a file created under
    the output name during a long job is kept; the result gets " (n)").
 2. Screenshots for GitHub (English and Arabic, Light and Dark). Arabic screenshots need the
    owner's approval.
@@ -172,8 +219,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 2. Git identity: `UncleGlitch <135931273+GlitchGLH@users.noreply.github.com>`.
 3. The 47 MB vendored repository is accepted.
 4. Done: compress to a set size and its checks use 1 MB = 1,048,576 bytes, like File
-   Explorer (`fd5b793`).
-5. (a) Done: a finished file never replaces an existing one (`6618323`). (b) portable
+   Explorer (`c504236`).
+5. (a) Done: a finished file never replaces an existing one (`3bdb5b0`). (b) portable
    downgrade and (c) `wmQuitUpdate`: deferred, see "Known and deferred".
 6. Done: `C:\Projects\Falak\deps` deleted (nothing in the build or tests used it; backup:
    `C:\Users\Glitch\Desktop\Falak-handover\falak-deps.zip`). `vendor/` untouched.
@@ -185,7 +232,7 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Python **3.14.10**, run as `py` (`python` is the Store alias and does not work in Git Bash).
 - go-winres not installed (the `.syso` is checked in).
 - `C:\Projects\deps` junction: created for the first test run, **removed after vendoring**
-  (`c311c4e`); builds and tests no longer need it. The old copies in `C:\Projects\Falak\deps`
+  (`af994d0`); builds and tests no longer need it. The old copies in `C:\Projects\Falak\deps`
   were deleted on 2026-11-09 (backup `C:\Users\Glitch\Desktop\Falak-handover\falak-deps.zip`).
 - FFmpeg for tests: **`C:\Projects\tools\ffmpeg-9.0.2`** (the pinned 9.0.2, outside the
   repo; put it on PATH; FFmpeg tests skip without one). The older `C:\Projects\tools\ffmpeg`
@@ -401,7 +448,7 @@ repo; put it on PATH for the FFmpeg tests, which skip without one).
 
 **Dependencies are vendored** (`vendor/`, `go.sum`): a fresh clone builds offline. Every module
 is unmodified upstream code (checked file by file against the Go module proxy when the old
-local `deps/` copies were retired — commit `c311c4e`). The former "v0.0.0" pins
+local `deps/` copies were retired — commit `af994d0`). The former "v0.0.0" pins
 (gen2brain/avif|heic|webp, srwiley/oksvg|rasterx) turned out to be plain upstream code.
 `replace` pins three modules to the versions Falak 1.0.0 is built from, because other modules
 ask for newer ones: `golang.org/x/sys v0.30.0`, `ebitengine/purego v0.8.4`,
@@ -457,10 +504,10 @@ deleted until the process exits.
 
 ## 5. SOUND RULE — never modify the sound code
 **Frozen verbatim at commit `4bd539b`** (old history, not in this repository; this repo's first
-commit `8816700` holds the same sound files and call sites): `sound_windows.go`, `res/*.wav`,
+commit `e29e934` holds the same sound files and call sites): `sound_windows.go`, `res/*.wav`,
 and every call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` / `soundOn`.
 No redesign, no "improvements", no volume changes — if a sound task ever comes up, **restore
-from `8816700`** (`git checkout 8816700 -- sound_windows.go res/`), do not edit.
+from `e29e934`** (`git checkout e29e934 -- sound_windows.go res/`), do not edit.
 
 Failed attempts (all abandoned — do not retry without an explicit user request):
 1. `PlaySound`-based approaches (0.31 era) — unreliable for looping/mixing.
@@ -502,27 +549,27 @@ Failed attempts (all abandoned — do not retry without an explicit user request
   shipped in installer+portable; README points to GitHub release pages for FFmpeg (not ffmpeg.org).
 
 Decisions from the 2026-11-08 review session (this repository's history):
-- **Key helper = UAC prompt every start** (`4901549`, text `14462d5`): the scheduled task
+- **Key helper = UAC prompt every start** (`7aed3ae`, text `8bd429d`): the scheduled task
   `Falak\KeysHelper` ran a user-writable exe with highest privileges and no prompt (silent
   elevation). No task any more; the elevated helper, the installer and the uninstaller delete
   an old one (installers fall back to one `runas` prompt). After a refused prompt the helper
   is not relaunched on every drag.
-- **Engines pinned** (`9821259`): FFmpeg 9.0.2 `full_build-shared` from GyanD/codexffmpeg
+- **Engines pinned** (`3c96dbb`): FFmpeg 9.0.2 `full_build-shared` from GyanD/codexffmpeg
   (permanent numbered releases; BtbN "latest" broke compress-to-size: `-pass 2` hit the AAC
-  stream, fixed with `-pass:v`/`-passlogfile:v` in `79b7d5c`), PDFium chromium/8138,
+  stream, fixed with `-pass:v`/`-passlogfile:v` in `fc5e411`), PDFium chromium/8138,
   qpdf 12.3.2, resvg 0.49.0, each with SHA-256; a mismatch reuses the existing "download
   didn't finish" text. Never go back to "latest" links.
-- **Engines folder** `%LOCALAPPDATA%\Falak\tools` (`b32152d`), not the install folder.
-- **One install folder** (`6081f23`): `installDir()` = installer's InstallLocation when
+- **Engines folder** `%LOCALAPPDATA%\Falak\tools` (`fae66c4`), not the install folder.
+- **One install folder** (`c5be6f9`): `installDir()` = installer's InstallLocation when
   Falak.exe is there, else `%LOCALAPPDATA%\Programs\Falak`; a second copy left by old builds
   in the default folder is removed; `InstallDirRegKey` reuses the folder on update.
 - **Uninstaller**: deletes only the files it installed and `RMDir` (no `/r`) on `$INSTDIR`
-  (`d4b9569`); reads the keep-settings answer via `MessageBox … IDYES` (`a0456db`); no
+  (`fa55486`); reads the keep-settings answer via `MessageBox … IDYES` (`30476e0`); no
   PowerShell — Layers cleanup is an NSIS `EnumRegValue` loop; closes Falak with
   `wmQuitUpdate` (0x8009) to `FalakMsg`, waits 5 s, then `taskkill /F`, then up to 3 s more
-  for the elevated helper (`0f3acfe`).
-- **Video compress** no longer holds `engineMu` during the encode (`b3a7987`).
-- **Vendored dependencies** (`c311c4e`), see Section 3.
+  for the elevated helper (`b8bbda8`).
+- **Video compress** no longer holds `engineMu` during the encode (`8d56baf`).
+- **Vendored dependencies** (`af994d0`), see Section 3.
 
 ## 7. Screenshots and docs images
 The README images (`docs/wheel-light-dark.png`, `docs/tray-menu.png`, `docs/compress-dialog.png`)
@@ -544,7 +591,7 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 540, wheel center (270,270).
 
 ## 8. Current state (as of 2026-11-08)
-- Repository: `C:\Projects\Falak`, git `main`; history starts at `8816700` (import of the state
+- Repository: `C:\Projects\Falak`, git `main`; history starts at `e29e934` (import of the state
   after `7bdc834` "1.0.0: no seam in the hover fill mid-animation"); later commits are the
   review fixes listed in Section 6. Version still 1.0.0.
 - New builds of Falak.exe / FalakSetup-1.0.0.exe exist only in `build/` (not published; their
@@ -593,7 +640,7 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 > false-positive review on the Setup's hash
 > (c8468accc505bc1bf82dcf36dbe0205cfb20205ac8eef494695e27a1e2063883) is pending; any new
 > build goes to build/ only; (2) never
-> modify the sound code (sound_windows.go, res/*.wav, sound call sites — frozen; same as 8816700);
+> modify the sound code (sound_windows.go, res/*.wav, sound call sites — frozen; same as e29e934);
 > (3) never change an existing Arabic string; (4) one commit per task with only
 > "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"; (5) version stays 1.0.0;
 > (6) run the gates (go test ./..., go vet with tags, installer/audit_paths.py) before every
