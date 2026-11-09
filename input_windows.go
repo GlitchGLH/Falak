@@ -136,6 +136,7 @@ func (a *App) poll() {
 			if !ps.blockedLogged {
 				ps.blockedLogged = true
 				diag("not opening: %s", reason)
+				logFullScreenDetails()
 			}
 		} else {
 			logf("Shift+drag detected at %d,%d (source: %s)", pt.X, pt.Y, processOf(a.downHwnd))

@@ -92,6 +92,10 @@ var (
 	pMonitorFromWindow            = user32.NewProc("MonitorFromWindow")
 	pGetWindowLongPtrW            = user32.NewProc("GetWindowLongPtrW")
 	pSetWindowLongPtrW            = user32.NewProc("SetWindowLongPtrW")
+	pEnumWindows                  = user32.NewProc("EnumWindows")
+	pIsWindowVisible              = user32.NewProc("IsWindowVisible")
+	pIsIconic                     = user32.NewProc("IsIconic")
+	pDwmGetWindowAttribute        = dwmapi.NewProc("DwmGetWindowAttribute")
 	pCreateMutexW                 = kernel32.NewProc("CreateMutexW")
 
 	pOleInitialize    = ole32.NewProc("OleInitialize")
