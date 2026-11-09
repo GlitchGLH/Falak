@@ -9,7 +9,17 @@ section wins over anything older below it. Arabic is quoted character for charac
 - Repository: `C:\Projects\Falak`, git branch `main`, local config `core.autocrlf=false`,
   `user.name=UncleGlitch`, `user.email=135931273+GlitchGLH@users.noreply.github.com` (local
   only; the owner's choice, 2026-11-09). History starts at `e29e934` (import of the handed-over
-  state). Nothing has been pushed to GitHub.
+  state).
+- **GitHub (2026-11-09): release v1.0.0 PUBLISHED**:
+  https://github.com/GlitchGLH/Falak/releases/tag/v1.0.0 (title "Falak 1.0.0", Latest, not
+  draft / prerelease; assets `FalakSetup-1.0.0.exe`, `Falak-1.0.0-portable.zip`,
+  `SHA256SUMS.txt`, downloaded back and checked with `sha256sum -c`, the zip's Falak.exe too).
+  Remote `origin` = https://github.com/GlitchGLH/Falak.git; default branch `main` = this local
+  history (pushed with `--force-with-lease`, first at `269428f`). The old GitHub `main`
+  (`c47bb7a` "Remove duplicate screenshot", with the owner's real screenshots) is kept in the
+  remote branch **`old-upload`** - do not delete it. Annotated tag `v1.0.0` -> `57f35db` (the
+  build commit). Push with the GitHub CLI login (`gh auth setup-git`, account GlitchGLH).
+  Never push `backup-before-email` or `build/`; never force-push `main` again.
 - **Email rewrite (2026-11-09):** every commit from the import to `bcd19cc` was rewritten with
   `git filter-branch --env-filter` to author and committer
   `UncleGlitch <135931273+GlitchGLH@users.noreply.github.com>`. Trees, messages, names and
@@ -222,15 +232,15 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - Final build from `57f35db` (2026-11-09), hashes above; manual test on the owner's PC and
   VirusTotal done (results above); Microsoft report not needed. RELEASE_NOTES.md has the
   checksums, the VirusTotal link and the SmartScreen line; README.md links the scan.
+- GitHub release v1.0.0 published (2026-11-09); old GitHub main kept as `old-upload`.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
 
 ### IN PROGRESS
-- Nothing in progress. `build/` holds the FINAL build from `57f35db` (see above).
+- Nothing in progress. `build/` holds the FINAL build from `57f35db`, published as v1.0.0.
 
 ### NEXT
-1. GitHub release v1.0.0 on GitHub (account GlitchGLH, repo Falak, author UncleGlitch, MIT
-   license; see Q1 below for how). Phase 2, only after the owner's explicit approval.
+- Nothing planned. Falak 1.0.0 is released; any new work waits for the owner.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -246,7 +256,7 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 
 ### Answers to the open questions (owner, 2026-11-09)
 1. Publishing: when we publish, first keep the current GitHub `main` in a backup branch
-   `old-upload`, then make this local history `main`. **Do NOT push until the owner says so.**
+   `old-upload`, then make this local history `main`. **Done on 2026-11-09** (see GitHub above).
 2. Git identity: `UncleGlitch <135931273+GlitchGLH@users.noreply.github.com>`.
 3. The 47 MB vendored repository is accepted.
 4. Done: compress to a set size and its checks use 1 MB = 1,048,576 bytes, like File
@@ -645,7 +655,7 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
   hashes differ from the ones under review). Manual testing on real Windows is pending.
 - **GitHub repo github.com/GlitchGLH/Falak is public (MIT, author UncleGlitch).**
   (2026-11-09: the README now uses the new screenshots in `docs/`, see Section 7.)
-- **Release v1.0.0 is NOT published yet** (everything is prepared: two upload batches).
+- (2026-11-09: release v1.0.0 is published, see the Current state section.)
 - **Microsoft submission `b8db366f-2c5d-4fba-ad8e-c4455e28841c`** (Wacatac.B!ml false
   positive) is **pending** on the files in `Falak-1.0.0-release` → never touch that folder.
 - Hashes under review (copy of `SHA256SUMS.txt`):
@@ -690,4 +700,4 @@ light+dark pair cropped from that sheet and joined side by side (PIL, in-session
 > (3) never change an existing Arabic string; (4) one commit per task with only
 > "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"; (5) version stays 1.0.0;
 > (6) run the gates (go test ./..., go vet with tags, installer/audit_paths.py) before every
-> commit. The release v1.0.0 on github.com/GlitchGLH/Falak is not published yet.
+> commit. The release v1.0.0 on github.com/GlitchGLH/Falak is published (2026-11-09).
