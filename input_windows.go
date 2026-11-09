@@ -167,39 +167,24 @@ func (a *App) poll() {
 }
 
 // blockedReason prevents the wheel from appearing over full-screen games,
-// presentations and similar, where Shift + mouse is often used for other things.
+// presentations and similar, where Shift + mouse is often used for other
+// things. The rule itself is blockDecision.
 func (a *App) blockedReason() string {
-	var state int32
-	if r, _, _ := pSHQueryUserNotificationState.Call(uintptr(unsafe.Pointer(&state))); r == 0 {
-		switch state {
-		case 2: // QUNS_BUSY: a full-screen app
-			return "a full-screen app is running"
-		case 3: // QUNS_RUNNING_D3D_FULL_SCREEN
-			return "a full-screen game is running"
-		case 4: // QUNS_PRESENTATION_MODE
-			return "presentation mode"
-		}
+	state, ok := qunsState()
+	if !ok {
+		state = 0
 	}
 	fg, _, _ := pGetForegroundWindow.Call()
-	if fg != 0 && processOf(fg) != "explorer.exe" && isFullscreen(fg) {
-		return "the active window is full screen"
+	var info *winInfo
+	if fg != 0 {
+		w := windowInfo(fg)
+		info = &w
 	}
-	return ""
-}
-
-func isFullscreen(hwnd uintptr) bool {
-	var r RECT
-	if ok, _, _ := pGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&r))); ok == 0 {
-		return false
+	reason := blockDecision(state, info, monitorRectOf(fg))
+	if reason == "" && state == qunsBusy && !ps.blockedLogged {
+		ps.blockedLogged = true
+		diag("QUNS_BUSY ignored: the active window is not a full-screen app")
+		logFullScreenDetails()
 	}
-	mon, _, _ := pMonitorFromWindow.Call(hwnd, MONITOR_DEFAULTTONEAREST)
-	mi := MONITORINFO{}
-	mi.CbSize = uint32(unsafe.Sizeof(mi))
-	pGetMonitorInfoW.Call(mon, uintptr(unsafe.Pointer(&mi)))
-	m := mi.RcMonitor
-	style, _, _ := pGetWindowLongPtrW.Call(hwnd, ^uintptr(15)) // GWL_STYLE (-16)
-	if style&0x00040000 != 0 {                                 // WS_THICKFRAME: a normal resizable (maybe maximized) window
-		return false
-	}
-	return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom
+	return reason
 }
