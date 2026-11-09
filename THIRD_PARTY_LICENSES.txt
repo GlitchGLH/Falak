@@ -1,4 +1,4 @@
-Falak 1.0.0 - third-party license texts
+Falak 1.0.1 - third-party license texts
 ============================================================
 
 Full license texts (and NOTICE files) of every library compiled

@@ -1,5 +1,5 @@
 # Falak install verification (run on real Windows, NOT in the build sandbox):
-#   powershell -ExecutionPolicy Bypass -File verify-install.ps1 [-Setup <path to FalakSetup-1.0.0.exe>]
+#   powershell -ExecutionPolicy Bypass -File verify-install.ps1 [-Setup <path to FalakSetup-1.0.1.exe>]
 # It silently installs Falak (/S, never waits for a GUI), prints every
 # shortcut target and registry value, verifies each referenced file exists,
 # then silently uninstalls and verifies everything is gone.
@@ -12,8 +12,8 @@ function Check($ok, $msg) {
     if ($ok) { Write-Host "  [PASS] $msg" } else { Write-Host "  [FAIL] $msg"; $script:fail = 1 }
 }
 if (-not $Setup) {
-    $cand = Get-ChildItem -Path "$PSScriptRoot\..\..", "$PSScriptRoot" -Filter 'FalakSetup-1.0.0.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($cand) { $Setup = $cand.FullName } else { Write-Host "[FAIL] FalakSetup-1.0.0.exe not found; pass -Setup <path>"; exit 1 }
+    $cand = Get-ChildItem -Path "$PSScriptRoot\..\..", "$PSScriptRoot" -Filter 'FalakSetup-1.0.1.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($cand) { $Setup = $cand.FullName } else { Write-Host "[FAIL] FalakSetup-1.0.1.exe not found; pass -Setup <path>"; exit 1 }
 }
 Write-Host "== Silent install from $Setup =="
 Start-Process -Wait -FilePath $Setup -ArgumentList '/S'

@@ -11,9 +11,9 @@ From the repo root, with Go >= 1.25 on PATH (output only in `build/`):
     GOOS=windows GOARCH=amd64 go build -p 1 -tags "wasm2go nodynamic" \
       -ldflags "-s -w -H windowsgui" -trimpath -o build/Falak.exe .
 
-The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest) is picked up by the linker automatically; `res/raha.rc` mirrors it for reference.
+The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.1.0 + manifest) is picked up by the linker automatically; `res/raha.rc` mirrors it for reference.
 
-## Build FalakSetup-1.0.0.exe (NSIS 3.x)
+## Build FalakSetup-1.0.1.exe (NSIS 3.x)
 1. Put a built `Falak.exe` into `installer/`.
 2. From the repo root run (absolute script path recommended):
 
@@ -22,7 +22,7 @@ The checked-in `rsrc_windows_amd64.syso` (icon + VERSIONINFO 1.0.0.0 + manifest)
    The script resolves its assets (icon `installer/raha-nsis.ico`, license
    `installer/license.txt`, `installer/Falak.exe`) relative to its own
    directory (`${__FILEDIR__}`, with backslashes) and writes
-   `FalakSetup-1.0.0.exe` two directory levels above `installer/`. To keep
+   `FalakSetup-1.0.1.exe` two directory levels above `installer/`. To keep
    everything inside `build/`, mirror the script into `build/nsis/installer/`
    first (see CLAUDE_HANDOVER.md Section 3).
 

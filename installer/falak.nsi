@@ -1,4 +1,4 @@
-; Falak 1.0.0 installer - per-user, no admin rights needed
+; Falak 1.0.1 installer - per-user, no admin rights needed
 Unicode true
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
@@ -10,7 +10,7 @@ Unicode true
 !define LayersKey "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
 
 Name "Falak"
-OutFile "${__FILEDIR__}\..\..\FalakSetup-1.0.0.exe"
+OutFile "${__FILEDIR__}\..\..\FalakSetup-1.0.1.exe"
 InstallDir "$LOCALAPPDATA\Programs\Falak"
 ; an update offers the folder Falak is already installed in
 InstallDirRegKey HKCU "${UninstKey}" "InstallLocation"
@@ -19,16 +19,16 @@ ShowInstDetails show
 ShowUnInstDetails show
 SetCompressor /SOLID lzma
 
-BrandingText "Falak 1.0.0 · By UncleGlitch"
+BrandingText "Falak 1.0.1 · By UncleGlitch"
 
-VIProductVersion "1.0.0.0"
-VIAddVersionKey /LANG=1033 FileVersion "1.0.0.0"
-VIAddVersionKey /LANG=1033 ProductVersion "1.0.0.0"
+VIProductVersion "1.0.1.0"
+VIAddVersionKey /LANG=1033 FileVersion "1.0.1.0"
+VIAddVersionKey /LANG=1033 ProductVersion "1.0.1.0"
 VIAddVersionKey /LANG=1033 ProductName "Falak"
 VIAddVersionKey /LANG=1033 CompanyName "UncleGlitch"
 VIAddVersionKey /LANG=1033 FileDescription "Falak installer"
 VIAddVersionKey /LANG=1033 LegalCopyright "(c) 2026 UncleGlitch"
-VIAddVersionKey /LANG=1033 OriginalFilename "FalakSetup-1.0.0.exe"
+VIAddVersionKey /LANG=1033 OriginalFilename "FalakSetup-1.0.1.exe"
 
 !define MUI_ICON "${__FILEDIR__}\raha-nsis.ico"
 !define MUI_UNICON "${__FILEDIR__}\raha-nsis.ico"
@@ -173,7 +173,7 @@ Section Install
   ${EndIf}
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "${UninstKey}" "DisplayName" "Falak"
-  WriteRegStr HKCU "${UninstKey}" "DisplayVersion" "1.0.0"
+  WriteRegStr HKCU "${UninstKey}" "DisplayVersion" "1.0.1"
   WriteRegStr HKCU "${UninstKey}" "Publisher" "UncleGlitch"
   WriteRegStr HKCU "${UninstKey}" "DisplayIcon" "$INSTDIR\Falak.exe"
   WriteRegStr HKCU "${UninstKey}" "InstallLocation" "$INSTDIR"
