@@ -68,11 +68,50 @@ section wins over anything older below it. Arabic is quoted character for charac
   | `788ec66` | `7d67d54` |
   | `b178c76` | `bcd19cc` |
 - Working tree clean after this handover commit.
-- Version: still **1.0.0** everywhere.
+- Version: **1.0.1** everywhere (bump `961a735`, owner's decision 2026-11-09). The published
+  v1.0.0 release and its assets stay untouched forever.
 - Release folders (Microsoft false-positive review pending on their hashes): never modify;
   read only with the owner's explicit permission:
   - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
   - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
+
+### 1.0.1 build (2026-11-09, from `961a735`; not published)
+Falak 1.0.1 = 1.0.0 plus the full-screen fix:
+- `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
+  (once per drag) shows the `SHQueryUserNotificationState` value, the foreground window
+  (class, process, rect, styles incl. topmost / layered / transparent), the monitor rect and,
+  on QUNS_BUSY, the first visible window covering the monitor (`EnumWindows`; minimized,
+  cloaked and Falak's own windows skipped). Code: `fullscreen_windows.go`.
+- `bb39861` "1.0.0: QUNS_BUSY alone no longer blocks the wheel": a user's PC (NVIDIA Overlay,
+  Avast, Avira) reported QUNS_BUSY while he was only in File Explorer, so the wheel never
+  opened. States 3 (D3D full screen) and 4 (presentation) still block; any other state
+  blocks only when the foreground window is a real full-screen window: no WS_THICKFRAME,
+  covers the monitor, not explorer.exe, not Progman / WorkerW, not click-through
+  (WS_EX_TRANSPARENT, or WS_EX_LAYERED + WS_EX_TOPMOST), not one of Falak's own windows
+  (this process or the helper, same exe). A QUNS_BUSY that is ignored is logged with the same
+  details ("QUNS_BUSY ignored"). Rule: `blockDecision` in `fullscreen_rule_windows.go`,
+  19 cases in `fullscreen_rule_windows_test.go`.
+- `961a735` "1.0.1: bump version": `appVersionNum` "1.0.1" (menu subtitle), VERSIONINFO 1.0.1.0
+  (`rsrc_windows_amd64.syso` patched in place: only 4 bytes changed, the two FILEVERSION /
+  PRODUCTVERSION low DWORDs and the two "1.0.0.0" strings; `res/raha.rc` matches), installer,
+  portable script, audit, verify-install.ps1, README / README.txt (two owner-approved Arabic
+  lines, version number only), THIRD_PARTY_LICENSES.txt, HANDOVER.md, CLAUDE.md rules.
+
+Built from a clean tree at `961a735` (`vcs.revision=961a735eafc844e371e7776fcc3a4177a3d4eb62`,
+`vcs.modified=false`; `shots_windows_test.go` moved out during the build), after all gates
+passed. Windows reads FileVersion / ProductVersion 1.0.1.0 from Falak.exe and the Setup; the
+icon and manifest resources are byte-identical to 1.0.0 (only the version resource differs).
+`build/SHA256SUMS.txt` holds the three hashes. The 1.0.0 files were removed from `build/`
+(they are on the GitHub v1.0.0 release).
+| File | Size (bytes) | SHA-256 |
+|---|---|---|
+| `build/Falak.exe` | 38,710,784 | `963ab4e449127ac86ccbd4042c4f075c9acc127d3a7d27572befdb4ee84f820f` |
+| `build/FalakSetup-1.0.1.exe` | 12,594,783 | `89da85bd78a89fd1b97b1f498853b8dc795be56309f2b660a08067a5110467d9` |
+| `build/Falak-1.0.1-portable.zip` | 16,932,024 | `b89a64202156559bc1b9f9246f3496255a4c65665a2267d90891b50881c14398` |
+
+Checked: the zip holds exactly `Falak.exe`, `README.txt`, `THIRD_PARTY_LICENSES.txt`; the
+`Falak.exe` in the zip and in the Setup payload (7-Zip) are byte-identical to
+`build/Falak.exe`; `go list -deps .` has no shots code. Do not rebuild for docs-only commits.
 
 ### FINAL build (2026-11-09, from `57f35db`; not published)
 Built from a clean tree at `57f35db` (`vcs.revision=57f35db8821db9a9a8015dc47fff6b14d7ffff7a`,
@@ -235,12 +274,19 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 - GitHub release v1.0.0 published (2026-11-09); old GitHub main kept as `old-upload`.
 - Docs: README (EN + owner's AR), notices, licenses, handovers, CLAUDE.md, portable README.txt.
 - Owner's manual tests listed above.
+- 1.0.1: full-screen fix (`ad92427`, `bb39861`), version bump (`961a735`), build from
+  `961a735` (hashes above).
 
 ### IN PROGRESS
-- Nothing in progress. `build/` holds the FINAL build from `57f35db`, published as v1.0.0.
+- Nothing in progress. `build/` holds the 1.0.1 build from `961a735` (not published).
 
 ### NEXT
-- Nothing planned. Falak 1.0.0 is released; any new work waits for the owner.
+1. Owner's manual test of 1.0.1.
+2. Send 1.0.1 to the user who had the blocked wheel and read his new `falak.log` (the
+   "full-screen check" / "QUNS_BUSY ignored" lines name the window behind QUNS_BUSY).
+3. VirusTotal scan of the 1.0.1 files.
+4. GitHub release v1.0.1. Before the v1.0.1 release: update the README VirusTotal link to
+   the 1.0.1 scan and write release notes for 1.0.1.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
