@@ -80,7 +80,7 @@ section wins over anything older below it. Arabic is quoted character for charac
   files are compressed together (Compress tool of any kind: `compress`, `v:compress`,
   `a:compress`, `p:compress`; counted after `applicable()`), each source folder gets a new
   folder `Compressed 2026-11-15 05-30` (local time at the drop; `conv.CompressFolderName`) and
-  that folder's copies go in it, named as before (`<name>-compressed.<ext>`). Owner's decision:
+  that folder's copies go in it (phase 2: under the ORIGINAL name, see below). Owner's decision:
   files from different folders get one dated folder in EACH source folder. An existing folder
   is never reused (`makeFolder` = `os.Mkdir` on the `nameSeries`, so " (1)", " (2)" ...); a
   folder left empty (all files failed or the job was cancelled) is removed at the end; a folder
@@ -100,8 +100,8 @@ section wins over anything older below it. Arabic is quoted character for charac
   586 MB / 2000 entries: 10 ms; 7Z 2000 entries: under 8 ms; RAR skips the data by seeking)
   and is cached per path+size+time (the wheel asks every frame). An SVG inside downloads resvg
   first (`NeedsResvg(path, id)`). TAR/GZ do not offer PDF. Two errors that the wheel cannot
-  reach are English only until the owner gives Arabic: "This archive doesn't hold only
-  images", "Couldn't read %s from the archive". No RAR test (no WinRAR on this machine to
+  reach got the owner's Arabic in phase 2 ("This archive doesn't hold only images", "Couldn't
+  read %s from the archive"). No RAR test (no WinRAR on this machine to
   make one). Code: `conv/archivepdf.go`, tests `conv/archivepdf_test.go`.
 - Test build (not a release): `build/phase1/Falak.exe` from `4f166b1`
   (`vcs.modified=false`), 38,734,848 bytes, SHA-256
@@ -111,6 +111,57 @@ section wins over anything older below it. Arabic is quoted character for charac
 - Video windows (Split, Snapshots, Speed, Crop, Trim, like the Tangerine app): investigated
   only, nothing implemented. Proposed order: Trim + Snapshots, then Split + Speed, then Crop.
   Every English string they need waits for the owner's Arabic.
+
+### New features, phase 2 (2026-11-15; version stays 1.0.1)
+Owner's decisions: the video windows REPLACE the one-click SPEED 2x, SNAPSHOT and SPLIT 1/2
+(SNAPSHOT replaced now; SPEED and SPLIT stay until their windows are built); the preview is
+silent (Falak has no audio path besides the untouchable sound code; output files keep their
+sound); Trim and Split cut exactly by re-encoding, never at the nearest key frame; README is
+updated once, before publishing.
+- `50c9d8b` "1.0.1: compressed copies in the dated folder keep the original name": in a
+  `Compressed <date> <time>` folder each copy has the original name (`photo.jpg`); only the
+  extension follows the output format (`clip.mov` -> `clip.mp4`, `scan.bmp` -> `scan.jpg`).
+  Same name twice -> " (n)" series. One file: unchanged (`-compressed` beside the original).
+- `4ef320e` "1.0.1: Arabic text for the archive-to-PDF errors": owner's Arabic for the two
+  phase 1 messages.
+- `0b6118d` "1.0.1: Trim Video window" (the shared video base is in this commit too):
+  - Shared base, reusable by Split, Speed and Crop: `conv/videoframes.go` (`ProbeVideo`,
+    `VideoInfo.FrameSeek` = a quarter frame early so FFmpeg's exact seek lands ON frame k,
+    `FrameAt` = one FFmpeg run per picture, BMP over a pipe, scaled to fit; exact or key
+    frame; `Thumbs` = 3 at a time; `OpensWindow(id)`), `ui/videobase.go` (the Compress
+    dialog's solid card, X top left, title/file name, preview area, thumbnail strip, button,
+    `timeX`/`shareAt` that mirror time in Arabic, `FormatClock` = 0:04.18, cut not rounded),
+    and the window manager `videowin_windows.go` (one window at a time; a worker goroutine
+    hands frames over under `vwin.mu` + `wmVideoUpdate`, latest frame request wins, results
+    of a closed window are dropped by `gen`). FFmpeg missing: the window shows "Preparing the
+    video..." with a thin bar while the same `EnsureFFmpeg` download as every video job runs
+    under `engineMu`. Measured: an exact 1080p H.264 frame 0.15-0.2 s, a thumbnail 0.14 s.
+  - Trim: `ui/trimdlg.go`; wheel item `v:trim` "TRIM" (icon "trim") after COMPRESS. Two
+    handles (one frame apart at least), the parts left out dimmed, the preview shows the
+    frame under the dragged handle (the end handle: the last frame kept), "%s selected",
+    Trim / Enter starts the job "Trimming" in the progress window; Esc / X close; the window
+    can be dragged by its empty parts. Output `<name>-trimmed.<ext>` (`.mp4/.mov/.mkv` kept,
+    else `.mp4`), x264 CRF 16 + AAC 192k, exact cut (`conv.TrimVideo`, `-ss` before `-i`).
+    Under 0.1 s: "The selection is too short". Several videos dropped: the window opens for
+    the first one. The compress job launcher became `launchVideoJob` (shared, no copy of
+    its texts).
+- `628ff8a` "1.0.1: Video Snapshots window replaces the one-click snapshot": `ui/snapdlg.go`,
+  `conv/snapshot.go`. Preview, scrubber, previous/next frame buttons (and Left/Right keys,
+  towards that side), "current / total" time; Save Snapshot / Enter saves the frame shown
+  (`SnapshotAt` at the same seek: the saved PNG is pixel-identical to the preview's source
+  frame, tested) as `<name>-snapshot.png`, then `<name>-snapshot (1).png`, `(2)`...; the
+  window stays open; "Saved" shows for 2 s. The old one-click case is gone from `runVideo`.
+- Arabic layout: the timeline, the strip, the handles, the scrubber and the bar run from the
+  right; "previous" sits on the right (its triangle points right) because earlier time is on
+  the right. «المدة المحددة: 0:05.41» reads label first, the time stays in order. The
+  "current / total" line is drawn "total / current" in Arabic so the current time is on the
+  right where reading starts. Screenshots (local only, from `shots_windows_test.go`
+  `TestShotsPhase2`): `C:\Users\Glitch\Desktop\Falak phase 2 shots`.
+- Test build (not a release): `build/phase2/Falak.exe` from `628ff8a`
+  (`vcs.modified=false`), 38,825,472 bytes, SHA-256
+  `a2a1bcabf9522e350da33311d423f86c20068b4ad9a078ea5ef175a2217853f5`. `build/Falak.exe`,
+  `build/phase1` and `build/SHA256SUMS.txt` untouched. The windows were not run on a real
+  desktop by Claude (running a build replaces the installed Falak); the owner tests them.
 
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
@@ -315,8 +366,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phase 1 done (see above); waiting for the owner's manual test of
-  `build/phase1/Falak.exe` and answers on the video windows. `build/` still holds the 1.0.1
+- New features, phases 1 and 2 done (see above); waiting for the owner's manual test of
+  `build/phase2/Falak.exe` (it contains phase 1 too). `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -329,10 +380,12 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of phase 1 (`build/phase1/Falak.exe`): compress folder, archive PDF.
-6. Arabic for the two English-only archive errors; README formats table (archive -> PDF)
-   needs the owner's Arabic too.
-7. Video windows: owner's answers and Arabic strings, then implement one or two per round.
+5. Owner's manual test of `build/phase2/Falak.exe`: compress folder (original names),
+   archive PDF, Trim Video, Video Snapshots.
+6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
+   folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
+7. Next video windows: Split (replaces SPLIT 1/2) + Speed (replaces SPEED 2x), then Crop;
+   their strings need the owner's Arabic first.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
