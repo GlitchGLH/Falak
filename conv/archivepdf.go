@@ -172,9 +172,8 @@ func archiveHasSVG(p string) bool {
 func archiveToPDF(ctx context.Context, p string, progress func(float64)) (string, error) {
 	s := archiveImages(p)
 	if !s.ok {
-		// not reachable from the wheel (the option is disabled then); the
-		// message has no approved Arabic text yet, so it stays English
-		return "", errors.New("This archive doesn't hold only images")
+		// not reachable from the wheel (the option is disabled then)
+		return "", errors.New(tr("This archive doesn't hold only images", "هذا الأرشيف لا يحتوي على صور فقط"))
 	}
 	page := map[string]int{}
 	for i, n := range s.images {
@@ -223,8 +222,8 @@ func archiveToPDF(ctx context.Context, p string, progress func(float64)) (string
 	}
 	for i, f := range files {
 		if f == "" {
-			// the archive changed while it was read; English only, like above
-			return "", fmt.Errorf("Couldn't read %s from the archive", s.images[i])
+			// the archive changed while it was read
+			return "", fmt.Errorf(tr("Couldn't read %s from the archive", "تعذّرت قراءة %s من الأرشيف"), s.images[i])
 		}
 	}
 	return writeAtomic(dst, func(w io.Writer) error {

@@ -195,8 +195,8 @@ func TestArchivePDFDisabled(t *testing.T) {
 	if it.Enabled {
 		t.Fatal("PDF must be disabled when a file is not an image")
 	}
-	if _, err := Run(context.Background(), zp, "to:PDF", nil); err == nil {
-		t.Fatal("running PDF on a mixed archive must fail")
+	if _, err := Run(context.Background(), zp, "to:PDF", nil); err == nil || err.Error() != "This archive doesn't hold only images" {
+		t.Fatalf("running PDF on a mixed archive must fail with its message, got %v", err)
 	}
 
 	empty := filepath.Join(dir, "empty.zip")
