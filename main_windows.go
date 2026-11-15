@@ -30,7 +30,7 @@ import (
 var appName, appVersion string
 
 const (
-	appVersionNum = "1.0.1"
+	appVersionNum = "2.0.0"
 	wmTray        = WM_APP + 1
 	timerAnim     = 1
 	menuHelp      = 2

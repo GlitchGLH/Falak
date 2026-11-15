@@ -1,4 +1,4 @@
-Falak 1.0.1 - portable
+Falak 2.0.0 - portable
 By UncleGlitch (GitHub: @GlitchGLH)
 https://github.com/GlitchGLH/Falak
 
@@ -18,7 +18,7 @@ If you installed Falak with the Setup, remove it from Settings > Apps instead.
 
 ----------------------------------------
 
-فلك 1.0.1 - نسخة محمولة
+فلك 2.0.0 - نسخة محمولة
 By UncleGlitch (GitHub: @GlitchGLH)
 https://github.com/GlitchGLH/Falak
 

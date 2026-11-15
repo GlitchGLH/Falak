@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds build/Falak-1.0.1-portable.zip from exactly three files:
+"""Builds build/Falak-2.0.0-portable.zip from exactly three files:
 
     Falak.exe                 (build/Falak.exe, built beforehand)
     README.txt                (installer/portable/README.txt)
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
-ZIP = BUILD / "Falak-1.0.1-portable.zip"
+ZIP = BUILD / "Falak-2.0.0-portable.zip"
 
 # name in the zip -> source file (audit_paths.py reads this list)
 FILES = {

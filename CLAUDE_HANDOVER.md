@@ -68,8 +68,10 @@ section wins over anything older below it. Arabic is quoted character for charac
   | `788ec66` | `7d67d54` |
   | `b178c76` | `bcd19cc` |
 - Working tree clean after this handover commit.
-- Version: **1.0.1** everywhere (bump `961a735`, owner's decision 2026-11-09). The published
-  v1.0.0 release and its assets stay untouched forever.
+- Version: **2.0.0** everywhere (owner's decision 2026-11-15; commit "2.0.0: bump version",
+  same places as the 1.0.1 bump `961a735`; the `.syso` patched in place, 8 bytes). Commit
+  messages now start with "2.0.0: ". 1.0.1 was never published. The published v1.0.0
+  release and its assets stay untouched forever.
 - Release folders (Microsoft false-positive review pending on their hashes): never modify;
   read only with the owner's explicit permission:
   - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`

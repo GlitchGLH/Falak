@@ -80,12 +80,12 @@ if listed != PORTABLE:
     fails.append(f"make_portable.py FILES must be exactly {sorted(PORTABLE)}, got {sorted(listed)}")
 if not (here / "portable" / "README.txt").is_file():
     fails.append("installer/portable/README.txt is missing")
-built = here.parent / "build" / "Falak-1.0.1-portable.zip"
+built = here.parent / "build" / "Falak-2.0.0-portable.zip"
 if built.is_file():
     with zipfile.ZipFile(built) as z:
         names = z.namelist()
     if sorted(names) != sorted(PORTABLE):
-        fails.append(f"build/Falak-1.0.1-portable.zip must hold exactly {sorted(PORTABLE)}, got {names}")
+        fails.append(f"build/Falak-2.0.0-portable.zip must hold exactly {sorted(PORTABLE)}, got {names}")
 
 if fails:
     print("NSI PATH AUDIT FAILED:")

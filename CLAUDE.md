@@ -14,12 +14,12 @@ commands, decision history and current state.
   approved text (code, installer, README, README.txt). Show every changed
   Arabic line in full, before and after. If an Arabic sentence becomes
   inaccurate, show it, propose a replacement and wait.
-- **Commits**: one commit per task, message `1.0.1: <what changed>`, ending
+- **Commits**: one commit per task, message `2.0.0: <what changed>`, ending
   with exactly `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`;
   no Claude-Session or "Generated with" line.
 - **Files**: UTF-8 without BOM, LF line endings (`vendor/` stays as upstream
   ships it).
-- **Version** stays 1.0.1 until the owner says otherwise.
+- **Version** stays 2.0.0 until the owner says otherwise.
 - **Gates before every commit**: `go test ./...`,
   `GOOS=linux go vet -tags "wasm2go nodynamic" ./...`,
   `py installer/audit_paths.py`.

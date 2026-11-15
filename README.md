@@ -56,7 +56,7 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 ## Install
 
-1. Download `FalakSetup-1.0.1.exe` from the
+1. Download `FalakSetup-2.0.0.exe` from the
    [releases page](https://github.com/GlitchGLH/Falak/releases/latest).
 2. Run it — no administrator rights needed; Falak installs for your user only
    (`%LOCALAPPDATA%\Programs\Falak`, or a folder you choose).
@@ -150,7 +150,7 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 ### التثبيت
 
-1. نزّل `FalakSetup-1.0.1.exe` من صفحة الإصدارات.
+1. نزّل `FalakSetup-2.0.0.exe` من صفحة الإصدارات.
 2. شغّله — لا يحتاج صلاحيات المسؤول، ويُثبَّت لحسابك فقط
    (`%LOCALAPPDATA%\Programs\Falak`).
 3. يظهر رمز «فلك» بجوار الساعة. اسحب ملفًا واضغط Shift.
