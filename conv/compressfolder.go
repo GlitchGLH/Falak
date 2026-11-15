@@ -86,3 +86,15 @@ func outPath(ctx context.Context, src, suffix, ext string) string {
 	}
 	return uniquePath(src, suffix, ext)
 }
+
+// CompressIDFor is the Compress tool of path's own kind ("" when the file
+// can't be compressed). A selection can mix images, videos, audio and PDFs;
+// Compress applies to each file with its own engine.
+func CompressIDFor(path string) string {
+	for _, it := range ToolItemsFor([]string{path}) {
+		if IsCompress(it.ID) && it.Enabled {
+			return it.ID
+		}
+	}
+	return ""
+}

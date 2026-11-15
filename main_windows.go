@@ -991,9 +991,12 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 	job := a.jobSeq
 	jobProgress.Store(job, -1.0)
 	label := a.wheel.Items[idx].Label
-	// Only files that this option really applies to are processed (a
-	// selection can mix kinds; the wheel shows the first file's options).
-	paths = applicable(paths, id)
+	// What runs on each file (a selection can mix kinds; the wheel shows
+	// the first file's options).
+	todo, unfit := planDrop(paths, id)
+	if len(todo) > 0 {
+		paths = dropPaths(todo)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancels[job] = cancel
 	// The wheel vanishes quickly; the progress window pops up in its place.
@@ -1015,15 +1018,14 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 			jobProgress.Store(job, f)
 			pPostMessageW.Call(a.msgWnd, wmJobProgress, uintptr(job), 0)
 		}
-		var safeRunPrep func(p string) (string, error)
-		safeRunPrep = func(p string) (string, error) {
+		safeRunPrep := func(p, id string) error {
 			engineMu.Lock()
 			defer engineMu.Unlock()
 			if conv.NeedsResvg(p, id) && !conv.HaveResvg() {
 				logf("downloading resvg")
 				report(0)
 				if err := conv.EnsureResvg(report); err != nil {
-					return "", err
+					return err
 				}
 				logf("resvg ready")
 			}
@@ -1031,7 +1033,7 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 				logf("downloading PDFium")
 				report(0)
 				if err := conv.EnsurePDFium(report); err != nil {
-					return "", err
+					return err
 				}
 				logf("PDFium ready")
 			}
@@ -1039,7 +1041,7 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 				logf("downloading FFmpeg")
 				report(0)
 				if err := conv.EnsureFFmpeg(report); err != nil {
-					return "", err
+					return err
 				}
 				logf("FFmpeg ready")
 			}
@@ -1047,48 +1049,17 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 				logf("downloading qpdf")
 				report(0)
 				if err := conv.EnsureQPDF(report); err != nil {
-					return "", err
+					return err
 				}
 				logf("qpdf ready")
 			}
-			return "", nil
+			return nil
 		}
-		// Compressing two or more files: the copies go into a dated folder
-		// in each source folder ("Compressed 2026-11-15 05-30").
-		var outDirs map[string]string
-		if conv.IsCompress(id) && len(paths) >= 2 {
-			outDirs = conv.CompressFolders(paths, time.Now())
-			for _, d := range outDirs {
-				logf("compress folder: %s", d)
-			}
+		for _, p := range unfit {
+			errs = append(errs, filepath.Base(p)+": "+notApplicable())
 		}
-		safeRun := func(p string, i, n int) (out string, err error) {
-			defer func() {
-				if r := recover(); r != nil {
-					logf("panic converting %s: %v", p, r)
-					err = errors.New(T("Unexpected error while processing", "خطأ غير متوقع أثناء المعالجة"))
-				}
-			}()
-			if _, err := safeRunPrep(p); err != nil {
-				return "", err
-			}
-			// 100% is shown only when the finished file is in place, so the
-			// bar never says done before the file appears.
-			report(float64(i) / float64(n))
-			if err := ctx.Err(); err != nil {
-				return "", err
-			}
-			rctx := ctx
-			if d := outDirs[filepath.Dir(p)]; d != "" {
-				rctx = conv.WithOutDir(ctx, d)
-			}
-			return conv.Run(rctx, p, id, func(f float64) {
-				report(math.Min((float64(i)+f)/float64(n), 0.99))
-			})
-		}
-		todo := paths
-		if len(todo) == 0 {
-			errs = append(errs, T("This option doesn't apply to the selected files", "هذا الخيار لا ينطبق على الملفات المحددة"))
+		if len(todo) == 0 && len(unfit) == 0 {
+			errs = append(errs, notApplicable())
 		}
 		if conv.IsMerge(id) {
 			// one output from the whole selection
@@ -1096,16 +1067,16 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 				defer func() {
 					if r := recover(); r != nil {
 						logf("panic merging: %v", r)
-						errs = append(errs, T("Unexpected error while processing", "خطأ غير متوقع أثناء المعالجة"))
+						errs = append(errs, unexpectedError().Error())
 					}
 				}()
-				for _, p := range todo {
-					if _, err := safeRunPrep(p); err != nil {
+				for _, f := range todo {
+					if err := safeRunPrep(f.path, f.id); err != nil {
 						errs = append(errs, err.Error())
 						return
 					}
 				}
-				out, err := conv.Merge(ctx, todo, id, func(f float64) { report(math.Min(f, 0.99)) })
+				out, err := conv.Merge(ctx, dropPaths(todo), id, func(f float64) { report(math.Min(f, 0.99)) })
 				if ctx.Err() != nil {
 					return
 				}
@@ -1119,23 +1090,11 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 			}()
 			todo = nil
 		}
-		for i, p := range todo {
-			out, err := safeRun(p, i, len(todo))
-			if ctx.Err() != nil {
-				break // cancelled: nothing more, no error message
-			}
-			if err != nil {
-				logf("failed %s: %v", filepath.Base(p), err)
-				errs = append(errs, filepath.Base(p)+": "+err.Error())
-				continue
-			}
+		outs, ferrs := runDropFiles(ctx, todo, safeRunPrep, report)
+		errs = append(errs, ferrs...)
+		for _, out := range outs {
 			res.count++
 			notifyCreated(out)
-		}
-		for _, d := range outDirs {
-			if d != "" && os.Remove(d) == nil { // only an empty folder goes (all failed or cancelled)
-				logf("compress folder removed (empty): %s", d)
-			}
 		}
 		if len(errs) > 0 {
 			res.ok = false
@@ -1145,6 +1104,104 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 		pPostMessageW.Call(a.msgWnd, wmJobDone, 0, 0)
 	}()
 	return DROPEFFECT_COPY
+}
+
+// dropFile is one dropped file and the option that runs on it.
+type dropFile struct{ path, id string }
+
+func dropPaths(todo []dropFile) []string {
+	out := make([]string, len(todo))
+	for i, f := range todo {
+		out[i] = f.path
+	}
+	return out
+}
+
+// planDrop picks what runs on each dropped file. A selection can mix kinds
+// and the wheel shows the first file's options. Compress applies to every
+// file with its own kind's tool (images, videos, audio and PDFs together);
+// a file that can't be compressed is returned in unfit, to be reported,
+// never skipped silently. Any other option runs on the files it applies to.
+func planDrop(paths []string, id string) (todo []dropFile, unfit []string) {
+	if conv.IsCompress(id) {
+		for _, p := range paths {
+			if cid := conv.CompressIDFor(p); cid != "" {
+				todo = append(todo, dropFile{p, cid})
+			} else {
+				logf("%s can't be compressed", filepath.Base(p))
+				unfit = append(unfit, p)
+			}
+		}
+		return todo, unfit
+	}
+	for _, p := range applicable(paths, id) {
+		todo = append(todo, dropFile{p, id})
+	}
+	return todo, nil
+}
+
+// runDropFiles runs each file's option, one after another. Compressing two
+// or more files puts the copies into a dated folder in each source folder
+// ("Compressed 2026-11-15 05-30"). It returns the files made and one error
+// line per failed file; a cancelled job stops without an error.
+func runDropFiles(ctx context.Context, todo []dropFile, prep func(p, id string) error, report func(float64)) (outs, errs []string) {
+	var outDirs map[string]string
+	if len(todo) >= 2 && conv.IsCompress(todo[0].id) {
+		outDirs = conv.CompressFolders(dropPaths(todo), time.Now())
+		for _, d := range outDirs {
+			logf("compress folder: %s", d)
+		}
+	}
+	run := func(f dropFile, i, n int) (out string, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				logf("panic converting %s: %v", f.path, r)
+				err = unexpectedError()
+			}
+		}()
+		if err := prep(f.path, f.id); err != nil {
+			return "", err
+		}
+		// 100% is shown only when the finished file is in place, so the
+		// bar never says done before the file appears.
+		report(float64(i) / float64(n))
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+		rctx := ctx
+		if d := outDirs[filepath.Dir(f.path)]; d != "" {
+			rctx = conv.WithOutDir(ctx, d)
+		}
+		return conv.Run(rctx, f.path, f.id, func(p float64) {
+			report(math.Min((float64(i)+p)/float64(n), 0.99))
+		})
+	}
+	for i, f := range todo {
+		out, err := run(f, i, len(todo))
+		if ctx.Err() != nil {
+			break // cancelled: nothing more, no error message
+		}
+		if err != nil {
+			logf("failed %s: %v", filepath.Base(f.path), err)
+			errs = append(errs, filepath.Base(f.path)+": "+err.Error())
+			continue
+		}
+		outs = append(outs, out)
+	}
+	for _, d := range outDirs {
+		if d != "" && os.Remove(d) == nil { // only an empty folder goes (all failed or cancelled)
+			logf("compress folder removed (empty): %s", d)
+		}
+	}
+	return outs, errs
+}
+
+func unexpectedError() error {
+	return errors.New(T("Unexpected error while processing", "خطأ غير متوقع أثناء المعالجة"))
+}
+
+func notApplicable() string {
+	return T("This option doesn't apply to the selected files", "هذا الخيار لا ينطبق على الملفات المحددة")
 }
 
 // quit stops running conversions (their engines are closed and unfinished
