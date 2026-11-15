@@ -142,8 +142,8 @@ updated once, before publishing.
     Trim / Enter starts the job "Trimming" in the progress window; Esc / X close; the window
     can be dragged by its empty parts. Output `<name>-trimmed.<ext>` (`.mp4/.mov/.mkv` kept,
     else `.mp4`), x264 CRF 16 + AAC 192k, exact cut (`conv.TrimVideo`, `-ss` before `-i`).
-    Under 0.1 s: "The selection is too short". Several videos dropped: the window opens for
-    the first one. The compress job launcher became `launchVideoJob` (shared, no copy of
+    Under 0.1 s: "The selection is too short". Several videos dragged: TRIM is disabled
+    (phase 2 decisions, below). The compress job launcher became `launchVideoJob` (shared, no copy of
     its texts).
 - `628ff8a` "1.0.1: Video Snapshots window replaces the one-click snapshot": `ui/snapdlg.go`,
   `conv/snapshot.go`. Preview, scrubber, previous/next frame buttons (and Left/Right keys,
@@ -162,6 +162,22 @@ updated once, before publishing.
   `a2a1bcabf9522e350da33311d423f86c20068b4ad9a078ea5ef175a2217853f5`. `build/Falak.exe`,
   `build/phase1` and `build/SHA256SUMS.txt` untouched. The windows were not run on a real
   desktop by Claude (running a build replaces the installed Falak); the owner tests them.
+
+### Phase 2 decisions (owner, 2026-11-15)
+- Frame buttons in Arabic: KEEP the mirrored layout ("previous frame" on the right, its
+  arrow pointing right). No code change.
+- `a8957be` "1.0.1: trim and snapshot are disabled for several videos": `videoTools(paths)`
+  marks TRIM and SNAPSHOT disabled (shown, never hidden) when more than one file is dragged;
+  the other video tools stay enabled. Test `TestWindowToolsOneVideo` (conv).
+- `7f627c3` "1.0.1: specific message when a snapshot can't be saved": a failed save shows
+  "Couldn't save the snapshot" «تعذّر حفظ اللقطة» (owner's text) as the title, with the file
+  name and the error below, in a Falak message box plus the balloon (`showError(title,
+  text)`; `showFailure` = `showError("Conversion failed", ...)`).
+- Test build (not a release): `build/phase2b/Falak.exe` from `7f627c3`
+  (`vcs.modified=false`), 38,825,472 bytes, SHA-256
+  `44f2f0bb63ae3fb8eb5087663bb3a1c8fa941bbdd4ea0306b1eff4686a0a8c26`. Contains phases 1 and
+  2 and these decisions. `build/Falak.exe`, `build/phase1`, `build/phase2` and
+  `build/SHA256SUMS.txt` untouched (verified).
 
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
@@ -366,8 +382,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phases 1 and 2 done (see above); waiting for the owner's manual test of
-  `build/phase2/Falak.exe` (it contains phase 1 too). `build/` still holds the 1.0.1
+- New features, phases 1 and 2 and the phase 2 decisions done (see above); waiting for the
+  owner's manual test of `build/phase2b/Falak.exe` (it contains everything). `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -380,8 +396,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase2/Falak.exe`: compress folder (original names),
-   archive PDF, Trim Video, Video Snapshots.
+5. Owner's manual test of `build/phase2b/Falak.exe`: compress folder (original names),
+   archive PDF, Trim Video, Video Snapshots, TRIM/SNAPSHOT disabled for several videos,
+   the snapshot-save error.
 6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
    folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
 7. Next video windows: Split (replaces SPLIT 1/2) + Speed (replaces SPEED 2x), then Crop;
