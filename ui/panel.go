@@ -363,7 +363,7 @@ func Visual(s string) string {
 		}
 	}
 	if !hasRTL {
-		return s
+		return dropInvisible(s)
 	}
 	shaped := shapeArabic([]rune(s))
 	// A small UAX #9 for our RTL interface: strong characters are level 1
@@ -374,9 +374,10 @@ func Visual(s string) string {
 	n := len(shaped)
 	lvl := make([]int, n)
 	for i, c := range shaped {
-		if isLTRStrong(c) {
+		switch {
+		case isLTRStrong(c), c == 0x200E: // LRM is a strong left-to-right mark
 			lvl[i] = 2
-		} else if isRTL(c) {
+		case isRTL(c), c == 0x200F: // RLM (and ALM, U+061C) are strong right-to-left marks
 			lvl[i] = 1
 		}
 	}
@@ -433,7 +434,21 @@ func Visual(s string) string {
 			vis[i] = mirror(vis[i])
 		}
 	}
-	return strings.TrimSpace(string(vis))
+	return strings.TrimSpace(dropInvisible(string(vis)))
+}
+
+// dropInvisible takes out the invisible format characters (see invisible):
+// they have done their work on the order and are never drawn.
+func dropInvisible(s string) string {
+	if !strings.ContainsFunc(s, invisible) {
+		return s
+	}
+	return strings.Map(func(c rune) rune {
+		if invisible(c) {
+			return -1
+		}
+		return c
+	}, s)
 }
 
 func isRTL(c rune) bool {
