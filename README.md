@@ -226,6 +226,74 @@ By UncleGlitch (GitHub: @GlitchGLH)
   <img src="docs/how-to-use-ar-dark.png" width="49%" alt="The How to use card in Arabic, dark theme">
 </p>
 
+### الصيغ المدعومة
+
+| الفئة | الصيغ |
+|---|---|
+| الصور | JPG, PNG, WEBP, AVIF, HEIC, TIFF, BMP, GIF, ICO, SVG، وملفات RAW من الكاميرات |
+| PDF | PDF |
+| Word / Excel / PowerPoint | مع Microsoft Office أو LibreOffice |
+| الفيديو | MP4, MOV, MKV, WEBM, AVI, WMV, GIF |
+| الصوت | MP3, M4A, WAV, FLAC, OGG, OPUS, WMA, AIFF |
+| الترجمات | SRT, VTT, ASS, SSA |
+| الملفات النصية | TXT إلى PDF وDOCX وRTF وHTML وJPG وPNG وSRT وVTT |
+| الأرشيف | ZIP و7Z وRAR وTAR وGZIP؛ وملف ZIP أو RAR أو 7Z يحتوي صورًا فقط يتحوّل إلى PDF |
+
+يتحوّل أرشيف الصور إلى ملف PDF واحد بجانب الأرشيف، كل صورة في صفحة، بترتيب طبيعي (2 قبل 10). وتُتجاهل الملفات المرافقة مثل `Thumbs.db` و`desktop.ini`.
+
+### الأدوات
+
+اضغط **Alt** أو **Ctrl** أو **Tab** والعجلة ظاهرة للتبديل بين الصيغ والأدوات. الأداة التي لا تناسب الملفات المسحوبة تظهر معطّلة ولا تُخفى.
+
+- **الفيديو:** COMPRESS, TRIM, METADATA, MUTE, SPEED, SNAPSHOT, SPLIT, CROP
+- **الصور:** COMPRESS, METADATA, ROTATE, RESIZE 50%, WHITE BG, BLACK BG
+  (الصور الشفافة), MERGE PDF (صورتان أو أكثر)
+- **الصوت:** COMPRESS, METADATA, NORMALIZE, VISUALIZE, CHANNELS
+- **PDF:** COMPRESS, ROTATE, SPLIT, MERGE (ملفا PDF أو أكثر)
+- **الأرشيف:** EXTRACT
+
+**ضغط عدة ملفات** معًا يحفظ النسخ في مجلد جديد يحمل التاريخ والوقت، مثل `Compressed 2026-11-15 05-30`، بجانب الملفات الأصلية، وتحتفظ كل نسخة باسمها الأصلي. أما الملف الواحد فيُحفظ بجانب أصله كما كان.
+
+**الرسائل والأسئلة** تظهر في نافذة «فلك» نفسها، بأسلوبه ولغته، بدل نوافذ رسائل ويندوز. اضغط Ctrl+C لنسخ الرسالة.
+
+### نوافذ الفيديو
+
+تفتح أدوات TRIM وSNAPSHOT وSPLIT وSPEED وCROP نافذة فيها معاينة للفيديو. تعمل على فيديو واحد في كل مرة، وتظهر معطّلة عند سحب عدة فيديوهات. المعاينة بلا صوت، والملفات المحفوظة تحتفظ بصوتها. اضغط Enter للتنفيذ، أو Esc للإغلاق.
+
+- **قص الفيديو:** اسحب الطرفين لتحتفظ بجزء من الفيديو. القص دقيق حتى مستوى الإطار. يُحفظ باسم `<الاسم>-trimmed`.
+- **لقطات من الفيديو:** انتقل إلى أي إطار (مفتاحا السهمين الأيمن والأيسر يتنقلان إطارًا واحدًا)، واحفظه صورة PNG باسم `<الاسم>-snapshot.png`. تبقى النافذة مفتوحة لالتقاط المزيد.
+- **تقسيم الفيديو:** أضف نقاط تقسيم على الشريط الزمني، واسحبها، أو احذفها بعلامة × فوقها. كل نقطة تبدأ جزءًا جديدًا مقصوصًا عند ذلك الإطار بالضبط. تُحفظ الأجزاء في مجلد جديد باسم `<الاسم> - parts`.
+- **تغيير سرعة الفيديو:** اختر سرعة من 0.25× إلى 4× بينما تعمل المعاينة بالسرعة نفسها. يحتفظ الصوت بطبقته الطبيعية. يُحفظ باسم `<الاسم>-0.5x`، بالسرعة التي اخترتها.
+  - **حركة بطيئة ناعمة** (0.25× و0.5× و0.75×): تُنشئ إطارات جديدة بين الإطارات بدل تكرارها، فتبدو الحركة البطيئة ناعمة. تستغرق المعالجة وقتًا أطول بكثير.
+- **اقتصاص الفيديو:** اسحب مستطيل الاقتصاص أو مقابضه فوق الصورة، واختر شكلًا (حرّة، 1:1، 16:9، 9:16، 4:3، 3:4)، أو اكتب العرض والارتفاع بالبكسل. يُحفظ باسم `<الاسم>-cropped`.
+
+لا يحل ملف ناتج محل ملف موجود أبدًا: يُضاف إلى الاسم ` (1)` أو ` (2)` وهكذا.
+
+<p>
+  <img src="docs/trim-ar-light.png" width="49%" alt="The Trim Video window in Arabic, light theme">
+  <img src="docs/trim-ar-dark.png" width="49%" alt="The Trim Video window in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/snapshots-ar-light.png" width="49%" alt="The Video Snapshots window in Arabic, light theme">
+  <img src="docs/snapshots-ar-dark.png" width="49%" alt="The Video Snapshots window in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/split-ar-light.png" width="49%" alt="The Split Video window in Arabic, light theme">
+  <img src="docs/split-ar-dark.png" width="49%" alt="The Split Video window in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/speed-ar-light.png" width="49%" alt="The Change Video Speed window with Smooth slow motion in Arabic, light theme">
+  <img src="docs/speed-ar-dark.png" width="49%" alt="The Change Video Speed window with Smooth slow motion in Arabic, dark theme">
+</p>
+
+<p>
+  <img src="docs/crop-ar-light.png" width="49%" alt="The Crop Video window in Arabic, light theme">
+  <img src="docs/crop-ar-dark.png" width="49%" alt="The Crop Video window in Arabic, dark theme">
+</p>
+
 ### التثبيت
 
 1. نزّل `FalakSetup-2.0.0.exe` من صفحة الإصدارات.
