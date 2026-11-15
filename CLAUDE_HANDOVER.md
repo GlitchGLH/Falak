@@ -226,6 +226,38 @@ updated once, before publishing.
   bytes, SHA-256 `30c05f5d5a3bba0da06be4cff34ab61457f308490322e7af15a95adce6a3e7ac`.
   Other build folders and `build/SHA256SUMS.txt` untouched (verified).
 
+### Falak message cards (owner's decisions 2026-11-15; `build/phase2c` not tested yet)
+- Decision 1: replace EVERY Windows message box in Falak.exe with Falak's own card (solid
+  card, the wheel's open/close). Not the installer/uninstaller (NSIS) messages.
+- Decision 2: the progress window keeps hiding INSTANTLY when a new drag sends its job to
+  the background (no delay for the wheel). Do not animate it.
+- Approved Arabic for the question's buttons (owner, 2026-11-15): Yes = «نعم», No = «لا».
+- `3aef544` "1.0.1: Falak cards replace the Windows message boxes": `ui/msgcard.go`
+  (`MessageCard`: the Compress dialog's solid card via `glassBase`, X top left, an
+  info/error/question icon and the title (`appName`), the text wrapped (a too-long path is
+  cut; more than 14 lines scroll with the wheel), buttons along the bottom, the first in the
+  accent color, Arabic mirrors title, text and button order) and `msgcard_windows.go`
+  (`showMessageCard`, `messageBox`). Like MessageBox it blocks and runs its own message
+  loop (the calling thread's windows keep working; WM_QUIT is passed on), works from any
+  goroutine (window on that locked thread) and in the second process; its own `ui.Fonts`
+  (faces are not thread-safe); topmost, on the taskbar (no WS_EX_TOOLWINDOW, the exe's
+  icon), shown then `SetForegroundWindow` as before. Keys: Enter/Space press the focused
+  button (the first at start), Esc / X / Alt+F4 = the cancel result (OK cards: closed;
+  the helper question: No), Tab / Shift+Tab / arrows move between Yes and No (mirrored in
+  Arabic), Ctrl+C copies the title and text (as MessageBox did). Drag the card from
+  anywhere but its controls. The five replaced: the already-running note (main, second
+  process, then exits), the drag-and-drop registration error (then exits), every error of
+  `showError` (job failures, snapshot/trim errors), the Key-reading helper hint, and the
+  helper question (Yes/No, `offerHelper`, Yes starts the helper). `pMessageBoxW`, `rtl()`
+  and the unused MB_ constants removed; `appFontPaths()` shared with main. `ui.Visual`
+  now mirrors « » in Arabic runs (they came out reversed in the cards: «فلك»).
+  Tests: `TestMessageCardButtons`, `TestMessageCardMirror`, `TestMessageCardWrap`,
+  `TestVisualGuillemets` (ui), `TestNextFocus`. A one-off live run (not committed) showed
+  the window and closed it with Enter, Esc, Tab+Enter, Right+Enter and WM_CLOSE.
+- Test build: `build/phase2d/Falak.exe` from `3aef544` (`vcs.modified=false`), 38,871,552
+  bytes, SHA-256 `fcb46d381f7882e0cdcd24538fac619918feb319122d49092d30847aa6748e4a`.
+  Other build folders and `build/SHA256SUMS.txt` untouched (verified).
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -430,8 +462,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 
 ### IN PROGRESS
 - New features, phases 1 and 2 and the phase 2 decisions done (see above); the owner tested
-  `build/phase2b` (results above); waiting for the test of `build/phase2c/Falak.exe` (the
-  three fixes). `build/` still holds the 1.0.1
+  `build/phase2b` (results above); `build/phase2c` was not tested; waiting for the test of
+  `build/phase2d/Falak.exe` (the three phase 2 fixes plus the message cards). `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -444,10 +476,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase2c/Falak.exe`: mixed multi-file compress, the
-   snapshot error's reason line, the popup animations. Owner's decision pending: replace
-   the Windows message boxes with an animated Falak card (needs no new text if it reuses
-   "OK"), and whether the progress window sent to the background by a new drag animates.
+5. Owner's manual test of `build/phase2d/Falak.exe`: mixed multi-file compress, the
+   snapshot error's reason line, the popup animations and the new message cards (both
+   decisions taken, see "Falak message cards").
 6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
    folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
 7. Next video windows: Split (replaces SPLIT 1/2) + Speed (replaces SPEED 2x), then Crop;
@@ -655,7 +686,8 @@ ships in installer + portable) · `THIRD_PARTY_NOTICES.md` · `CLAUDE.md` (perma
 capture-free popups, tray init, `logAffinity`) · `droptarget_windows.go` (COM drag&drop
 target) · `tray_windows.go` (tray icon) · `menu_windows.go` (tray menu window, rows, actions,
 fade/slide animation via `presentLayeredA`) · `compdialog_windows.go` (Compress dialog host,
-no captures) · `help_windows.go` (How-to-use host) · `win32_windows.go` (Win32 decls) ·
+no captures) · `help_windows.go` (How-to-use host) · `msgcard_windows.go` (message cards
+replacing MessageBox) · `win32_windows.go` (Win32 decls) ·
 `input_windows.go` (keyboard state) · `elevation_windows.go` (run-as-admin) ·
 `helper_windows.go` (key helper opt-in, UAC each start) · `install_windows.go` (self-install
 into `installDir()` = installer's InstallLocation or the default; old helper task removal) ·
@@ -667,8 +699,9 @@ rOut 147, rIn 60.5, rHole 52.3; render pipeline; hover springs; `segmentPath`;
 `segShadow`/`drawSegShadow`; `drawLiftedSegment`) · `menu.go` (tray menu model/draw, card
 colors dark {40,40,44} / light {255,255,255}) · `panel.go` (progress panel, solid `glassBase`) ·
 `compdialog.go` (Compress dialog model: `TargetMB`, `TargetTooBig`, `OriginalBytes`,
-`StartActive`) · `helpcard.go` · `icons.go` (supersampled line icons) · `fonts.go` (Inter/Amiri)
-· `blur.go` (FrostBackground, GaussianBlur, box blurs) · `zoom.go` · `textblock.go` ·
+`StartActive`) · `helpcard.go` · `msgcard.go` (message card) · `popanim.go` (the wheel's open/close for
+popups) · `icons.go` (supersampled line icons) · `fonts.go` (Inter/Amiri)
+· `blur.go` (FrostBackground, GaussianBlur, box blurs) · `textblock.go` ·
 tests: `lift_test.go`, `seam_test.go` (hover-seam regression), `menu_test.go`, `visual_test.go`,
 `race_test.go`, `glass_bench_test.go`.
 
