@@ -2,8 +2,8 @@
 
 package main
 
-// The video windows (Trim Video, Video Snapshots; later Split, Speed,
-// Crop): our
+// The video windows (Trim Video, Video Snapshots, Split Video; later
+// Speed, Crop): our
 // own layered window like the Compress dialog, opening where the wheel was.
 // Frames and thumbnails come from FFmpeg on other goroutines; they hand
 // their results over under vwin.mu and post wmVideoUpdate, and only the
@@ -12,6 +12,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"math"
 	"path/filepath"
@@ -30,12 +31,14 @@ const (
 	savedMs       = 2000
 	VK_LEFT       = 0x25
 	VK_RIGHT      = 0x27
+	VK_DELETE     = 0x2E
 )
 
 // the kinds of video window
 const (
 	vkTrim = iota + 1
 	vkSnap
+	vkSplit
 )
 
 var vwin struct {
@@ -43,6 +46,8 @@ var vwin struct {
 	kind     int
 	trim     *ui.TrimDialog
 	snap     *ui.SnapDialog
+	split    *ui.SplitDialog
+	press    [2]int // what a press in the Split window landed on (kind, point)
 	path     string
 	id       string // the wheel item ("v:trim")
 	label    string // its wheel label, for the job's title and results
@@ -85,7 +90,8 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	}
 	vwin.path, vwin.id, vwin.label = path, id, label
 	vwin.info = conv.VideoInfo{}
-	vwin.trim, vwin.snap = nil, nil
+	vwin.trim, vwin.snap, vwin.split = nil, nil, nil
+	vwin.press = [2]int{}
 	var w, h, tw, th, pw, ph int
 	switch id {
 	case "v:trim":
@@ -114,6 +120,20 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 		})
 		w, h = vwin.snap.Size()
 		pw, ph = vwin.snap.PreviewSize() // no thumbnails (tw, th stay 0)
+	case "v:split":
+		vwin.kind = vkSplit
+		vwin.split = ui.NewSplitDialog(scale, a.fonts, darkMode(), arabic, ui.SplitLabels{
+			Title:         T("Split Video", "تقسيم الفيديو"),
+			File:          filepath.Base(path),
+			Add:           T("Add Split", "إضافة نقطة تقسيم"),
+			Split:         T("Split", "تقسيم"),
+			Preparing:     T("Preparing the video…", "جار تجهيز الفيديو…"),
+			PreviewFailed: T("Couldn't show the preview", "تعذّر عرض المعاينة"),
+			Count:         func(n int) string { return splitCountText(n, arabic) },
+		})
+		w, h = vwin.split.Size()
+		tw, th = vwin.split.ThumbSize()
+		pw, ph = vwin.split.PreviewSize()
 	default:
 		return
 	}
@@ -265,6 +285,25 @@ func takeVideoUpdates() {
 			d.Frame = frame
 		}
 	}
+	if d := vwin.split; d != nil {
+		d.Progress = prog
+		if failed {
+			d.Failed = true
+		}
+		if ready && !failed && d.Duration == 0 {
+			vwin.info = info
+			d.SetVideo(info.Duration, conv.SplitGap(info))
+			requestFrame(0)
+		}
+		if frame != nil {
+			d.Frame = frame
+		}
+		for i, t := range thumbs {
+			if i >= 0 && i < len(d.Thumbs) {
+				d.Thumbs[i] = t
+			}
+		}
+	}
 }
 
 func hideVideoWindow() {
@@ -297,6 +336,8 @@ func refreshVideoWindow() {
 		img = vwin.trim.Render()
 	case vwin.snap != nil:
 		img = vwin.snap.Render()
+	case vwin.split != nil:
+		img = vwin.split.Render()
 	default:
 		return
 	}
@@ -353,9 +394,40 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 				}
 				snapShow(d, d.Pos+n)
 			}
+			if d := vwin.split; d != nil && d.Ready() {
+				n := 1
+				if (wParam == VK_LEFT) != d.RTL {
+					n = -1
+				}
+				fr := vwin.info.FrameRate()
+				splitPlayhead(d, vwin.info.FrameTime(int(math.Round(d.Playhead*fr))+n))
+			}
+		case VK_DELETE: // removes the point last added or dragged
+			if d := vwin.split; d != nil && d.Sel >= 0 {
+				d.Remove(d.Sel)
+				refreshVideoWindow()
+			}
 		}
 		return 0
 	case WM_LBUTTONDOWN:
+		if d := vwin.split; d != nil {
+			kind, i := d.HitTest(x, y)
+			vwin.press = [2]int{kind, i}
+			switch kind {
+			case ui.SplitPoint: // drag the point; the preview follows it
+				d.Sel = i
+				splitPlayhead(d, d.Points[i])
+				pSetCapture.Call(hwnd)
+			case ui.SplitStrip: // the playhead jumps here and can be dragged
+				splitPlayhead(d, d.TimeAt(x))
+				pSetCapture.Call(hwnd)
+			case ui.SplitNone:
+				vwin.drag = true
+				vwin.dragOff = POINT{int32(x), int32(y)}
+				pSetCapture.Call(hwnd)
+			}
+			return 0
+		}
 		if d := vwin.snap; d != nil {
 			switch d.HitTest(x, y) {
 			case ui.SnapSlider:
@@ -406,6 +478,18 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			snapShow(d, d.FrameAtX(x))
 			return 0
 		}
+		if d := vwin.split; d != nil {
+			switch vwin.press[0] {
+			case ui.SplitPoint:
+				t := d.MovePoint(vwin.press[1], splitSnap(d.TimeAt(x)))
+				d.Error = ""
+				splitPlayhead(d, t)
+				return 0
+			case ui.SplitStrip:
+				splitPlayhead(d, d.TimeAt(x))
+				return 0
+			}
+		}
 		if !vwin.tracking {
 			tme := trackMouseEvent{DwFlags: TME_LEAVE, HwndTrack: hwnd}
 			tme.CbSize = uint32(unsafe.Sizeof(tme))
@@ -425,11 +509,40 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 		if d := vwin.snap; d != nil && d.Dragging {
 			d.Dragging = false
 		}
+		if vwin.split != nil && (vwin.press[0] == ui.SplitPoint || vwin.press[0] == ui.SplitStrip) {
+			vwin.press = [2]int{}
+		}
 		return 0
 	case WM_LBUTTONUP:
 		if vwin.drag {
 			vwin.drag = false
 			pReleaseCapture.Call()
+			return 0
+		}
+		if d := vwin.split; d != nil {
+			press := vwin.press
+			vwin.press = [2]int{}
+			if press[0] == ui.SplitPoint || press[0] == ui.SplitStrip {
+				pReleaseCapture.Call()
+				return 0
+			}
+			kind, i := d.HitTest(x, y)
+			if kind != press[0] || i != press[1] {
+				return 0 // pressed on one thing, released on another
+			}
+			switch kind {
+			case ui.SplitClose:
+				hideVideoWindow()
+			case ui.SplitBadge:
+				d.Remove(i)
+				refreshVideoWindow()
+			case ui.SplitAdd:
+				if d.Add() {
+					refreshVideoWindow()
+				}
+			case ui.SplitButton:
+				app.videoAction()
+			}
 			return 0
 		}
 		if d := vwin.snap; d != nil {
@@ -500,6 +613,74 @@ func (a *App) videoAction() {
 	if d := vwin.snap; d != nil {
 		a.snapSave(d)
 	}
+	if d := vwin.split; d != nil {
+		a.splitStart(d)
+	}
+}
+
+// splitSnap puts time t on the start of the nearest frame, so a point or
+// the playhead always marks a whole frame.
+func splitSnap(t float64) float64 {
+	return vwin.info.FrameTime(int(math.Round(t * vwin.info.FrameRate())))
+}
+
+// splitPlayhead moves the Split window's playhead to t (on a frame start)
+// and asks for that frame.
+func splitPlayhead(d *ui.SplitDialog, t float64) {
+	d.SetPlayhead(splitSnap(t))
+	fr := vwin.info.FrameRate()
+	requestFrame(vwin.info.FrameSeek(int(math.Round(d.Playhead * fr))))
+	refreshVideoWindow()
+}
+
+// splitCountText is the Split window's counter line (the owner's approved
+// Arabic forms by number).
+func splitCountText(n int, ar bool) string {
+	if !ar {
+		if n == 1 {
+			return "1 split point"
+		}
+		return fmt.Sprintf("%d split points", n)
+	}
+	switch {
+	case n == 0:
+		return "لا توجد نقاط تقسيم"
+	case n == 1:
+		return "نقطة تقسيم واحدة"
+	case n == 2:
+		return "نقطتا تقسيم"
+	case n <= 10:
+		return fmt.Sprintf("%d نقاط تقسيم", n)
+	}
+	return fmt.Sprintf("%d نقطة تقسيم", n)
+}
+
+// splitStart checks there is a point, then closes the window and starts
+// the job (or shows the error line and stays open). Each point becomes the
+// first frame of the next part.
+func (a *App) splitStart(d *ui.SplitDialog) {
+	if !d.Ready() {
+		return
+	}
+	if len(d.Points) == 0 {
+		d.Error = T("Add at least one split point", "أضف نقطة تقسيم واحدة على الأقل")
+		refreshVideoWindow()
+		return
+	}
+	fr := vwin.info.FrameRate()
+	cuts := make([]float64, len(d.Points))
+	for i, p := range d.Points {
+		cuts[i] = vwin.info.FrameSeek(int(math.Round(p * fr)))
+	}
+	path := vwin.path
+	cx := vwin.x + int32(float64(d.W)/2)
+	cy := vwin.y + int32(float64(d.H)/2)
+	scale := d.Scale
+	hideVideoWindow()
+	logf("split %s at %v s", filepath.Base(path), cuts)
+	a.launchVideoJob(path, vwin.id, vwin.label, cx, cy, scale, func(ctx context.Context, report func(float64)) (string, error) {
+		return conv.SplitVideo(ctx, path, cuts, report)
+	})
 }
 
 // snapSave saves the frame shown as a PNG beside the video; the window

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -534,7 +533,8 @@ var videoEncode = map[string][]string{
 func videoItems(path string) []Item { return formatItems(videoTargets, normalizeOwn(path)) }
 
 // videoTools lists the video tools for a selection. The windows (Trim,
-// Snapshots) work on one video, so they are shown disabled for several files.
+// Snapshots, Split) work on one video, so they are shown disabled
+// for several files.
 func videoTools(paths []string) []Item {
 	one := len(paths) == 1
 	return []Item{
@@ -544,7 +544,7 @@ func videoTools(paths []string) []Item {
 		{"v:mute", "MUTE", "mute", true},
 		{"v:speed", "SPEED 2×", "speed", true},
 		{"v:snapshot", "SNAPSHOT", "snapshot", one},
-		{"v:split", "SPLIT ½", "split", true},
+		{"v:split", "SPLIT", "split", one},
 	}
 }
 
@@ -584,55 +584,6 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 			args = append(args, "-filter:a", "atempo=2.0", "-c:a", "aac", "-b:a", "192k")
 		}
 		return ffmpeg(ctx, path, dst, args, mi.duration/2, progress)
-	case id == "v:split":
-		// two halves, cut without re-encoding (no quality loss) at the
-		// key frame nearest the middle, into a folder beside the video
-		if mi.duration <= 1 {
-			return "", errors.New(tr("This video is too short to split", "هذا الفيديو أقصر من أن يُقسَم"))
-		}
-		base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-		root := uniqueDir(filepath.Dir(path), base+" - parts")
-		tmp := tempFor(root)
-		if err := os.MkdirAll(tmp, 0o755); err != nil {
-			return "", err
-		}
-		half := mi.duration / 2
-		out := filepath.Join(tmp, strings.ReplaceAll(base, "%", "%%")+" - part %d"+ext)
-		seg := []string{"-f", "segment", "-segment_times", fmt.Sprintf("%.3f", math.Max(0.5, half-0.05)),
-			"-segment_start_number", "1", "-reset_timestamps", "1"}
-		// First try without re-encoding (no quality loss): the cut lands on
-		// the key frame nearest the middle.
-		err := ffmpegRaw(ctx, nil, path, out, append([]string{"-map", "0", "-c", "copy"}, seg...), mi.duration, func(f float64) {
-			if progress != nil {
-				progress(f * 0.3)
-			}
-		})
-		if err == nil {
-			parts, _ := os.ReadDir(tmp)
-			first := filepath.Join(tmp, fmt.Sprintf("%s - part 1%s", base, ext))
-			if len(parts) != 2 || math.Abs(probe(first).duration-half) > math.Max(1, mi.duration*0.05) {
-				// key frames too far apart for an even cut: re-encode, cutting
-				// exactly in the middle (at a visually lossless quality)
-				for _, e := range parts {
-					os.Remove(filepath.Join(tmp, e.Name()))
-				}
-				enc := []string{"-map", "0:v:0", "-map", "0:a?", "-force_key_frames", fmt.Sprintf("%.3f", half),
-					"-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k"}
-				if ext != ".mp4" && ext != ".mov" && ext != ".mkv" {
-					out = filepath.Join(tmp, strings.ReplaceAll(base, "%", "%%")+" - part %d.mp4")
-				}
-				err = ffmpegRaw(ctx, nil, path, out, append(enc, seg...), mi.duration, func(f float64) {
-					if progress != nil {
-						progress(0.3 + f*0.7)
-					}
-				})
-			}
-		}
-		if err != nil {
-			dropTemp(tmp)
-			return "", err
-		}
-		return finishTemp(tmp, root)
 	}
 	return "", errors.New(tr("This tool isn't available yet", "هذه الأداة غير متاحة بعد"))
 }

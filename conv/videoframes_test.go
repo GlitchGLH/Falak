@@ -146,7 +146,7 @@ func TestWindowToolsOneVideo(t *testing.T) {
 	}
 	one := state([]string{"a.mp4"})
 	several := state([]string{"a.mp4", "b.mov"})
-	for _, id := range []string{"v:trim", "v:snapshot"} {
+	for _, id := range []string{"v:trim", "v:snapshot", "v:split"} {
 		if e, ok := one[id]; !ok || !e {
 			t.Errorf("one video: %s shown %v, enabled %v; want enabled", id, ok, e)
 		}
