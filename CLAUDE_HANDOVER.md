@@ -10,6 +10,9 @@ section wins over anything older below it. Arabic is quoted character for charac
   `user.name=UncleGlitch`, `user.email=135931273+GlitchGLH@users.noreply.github.com` (local
   only; the owner's choice, 2026-11-09). History starts at `e29e934` (import of the handed-over
   state).
+- **GitHub (2026-11-16): release v2.0.0 PUBLISHED, Latest**:
+  https://github.com/GlitchGLH/Falak/releases/tag/v2.0.0 (see "2.0.0 published"). The
+  v1.0.0 notes below stay valid for v1.0.0 and `old-upload`.
 - **GitHub (2026-11-09): release v1.0.0 PUBLISHED**:
   https://github.com/GlitchGLH/Falak/releases/tag/v1.0.0 (title "Falak 1.0.0", Latest, not
   draft / prerelease; assets `FalakSetup-1.0.0.exe`, `Falak-1.0.0-portable.zip`,
@@ -478,7 +481,27 @@ updated once, before publishing.
   Proposed English: "... and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds
   only images converts to PDF)." Waiting for the owner's Arabic.
 
-### 2.0.0 tested and scanned (owner, 2026-11-16) - release ready, not published yet
+### 2.0.0 published (owner's explicit approval, 2026-11-16) - CURRENT
+- `git push origin main` (plain, no force): `a330a74..b5115b4`, fast-forward.
+- Annotated tag `v2.0.0` (not GPG-signed; tag object `b188c7b`, message "Falak 2.0.0") ->
+  `b5115b4` "2.0.0: handover records the tested and scanned 2.0.0 release", pushed alone.
+  The exe was built from `9c78931`; every commit after it is docs only.
+- GitHub release "Falak 2.0.0": https://github.com/GlitchGLH/Falak/releases/tag/v2.0.0
+  Latest, not draft / prerelease. Text: the 2.0.0 section of RELEASE_NOTES.md (lines 1-78,
+  English then «بالعربية», up to the `---` before the 1.0.0 notes). Assets:
+  `FalakSetup-2.0.0.exe` (12,695,728), `Falak-2.0.0-portable.zip` (17,049,405),
+  `SHA256SUMS.txt` (254).
+- Verified after publishing: the assets downloaded back with `gh release download`;
+  `sha256sum -c` OK for FalakSetup-2.0.0.exe and the zip (the `Falak.exe` line has no
+  separate asset, by design, as in 1.0.0); SHA256SUMS.txt identical to `build/`'s; the zip's
+  Falak.exe `sha256sum -c` OK and byte-identical to `build/Falak.exe`; the release body
+  equals the notes (GitHub drops the last newline). README on GitHub: the 40 `docs/` images
+  load, the tray menu and Arabic progress images are the new blobs (same git SHA as local),
+  both VirusTotal links (EN + AR) point to the installer scan `9d5cf981...df36`.
+- Untouched: release v1.0.0 and its three assets, tag `v1.0.0`, branch `old-upload`. Not
+  pushed: `backup-before-email`, `build/`.
+
+### 2.0.0 tested and scanned (owner, 2026-11-16) - published, see above
 - Owner's manual test of the rebuilt final files (from `9c78931`): EVERYTHING PASSED.
   Upgrade from 1.0.1 to 2.0.0 kept the settings (Arabic, dark theme, sounds off) and showed
   2.0.0 / 2.0.0.0; the main features and the five video windows work; the Arabic How to
@@ -795,17 +818,10 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- **2.0.0 is tested, scanned and ready to publish** (see "2.0.0 tested and scanned"): the
-  final files in `build/` (from `9c78931`), docs final (VirusTotal link in README EN + AR and
-  RELEASE_NOTES, README screenshots match 2.0.0). Old build folders deleted.
+- Nothing. **2.0.0 is published** (see "2.0.0 published"). The final files stay in `build/`.
 
-### NEXT (the one remaining step)
-1. Only on the owner's explicit approval, in its own round: push `main` (never force), tag
-   `v2.0.0` (annotated) on the commit that holds the final docs (the exe was built from
-   `9c78931`; later commits are docs only), GitHub release "Falak 2.0.0" with
-   `FalakSetup-2.0.0.exe`, `Falak-2.0.0-portable.zip`, `SHA256SUMS.txt` and the 2.0.0 notes;
-   download the assets back and `sha256sum -c`. The v1.0.0 release and its assets stay
-   untouched.
+### NEXT
+- Nothing planned. Version stays 2.0.0 until the owner says otherwise.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
