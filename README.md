@@ -247,7 +247,7 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 - **الفيديو:** COMPRESS, TRIM, METADATA, MUTE, SPEED, SNAPSHOT, SPLIT, CROP
 - **الصور:** COMPRESS, METADATA, ROTATE, RESIZE 50%, WHITE BG, BLACK BG
-  (الصور الشفافة), MERGE PDF (صورتان أو أكثر)
+  (الصور الشفافة)، MERGE PDF (صورتان أو أكثر)
 - **الصوت:** COMPRESS, METADATA, NORMALIZE, VISUALIZE, CHANNELS
 - **PDF:** COMPRESS, ROTATE, SPLIT, MERGE (ملفا PDF أو أكثر)
 - **الأرشيف:** EXTRACT
