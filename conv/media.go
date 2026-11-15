@@ -533,7 +533,7 @@ var videoEncode = map[string][]string{
 func videoItems(path string) []Item { return formatItems(videoTargets, normalizeOwn(path)) }
 
 // videoTools lists the video tools for a selection. The windows (Trim,
-// Snapshots, Split, Speed) work on one video, so they are shown disabled
+// Snapshots, Split, Speed, Crop) work on one video, so they are shown disabled
 // for several files.
 func videoTools(paths []string) []Item {
 	one := len(paths) == 1
@@ -545,6 +545,7 @@ func videoTools(paths []string) []Item {
 		{"v:speed", "SPEED", "speed", one},
 		{"v:snapshot", "SNAPSHOT", "snapshot", one},
 		{"v:split", "SPLIT", "split", one},
+		{"v:crop", "CROP", "crop", one},
 	}
 }
 

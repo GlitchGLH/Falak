@@ -1483,6 +1483,8 @@ func jobTitle(id, label string) string {
 		return T("Taking a snapshot", "جار التقاط صورة")
 	case "split":
 		return T("Splitting", "جار التقسيم")
+	case "crop":
+		return T("Cropping", "جار الاقتصاص")
 	case "trim":
 		return T("Trimming", "جار القص")
 	case "normalize":

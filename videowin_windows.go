@@ -3,7 +3,7 @@
 package main
 
 // The video windows (Trim Video, Video Snapshots, Split Video, Change
-// Video Speed; later Crop): our
+// Video Speed, Crop Video): our
 // own layered window like the Compress dialog, opening where the wheel was.
 // Frames and thumbnails come from FFmpeg on other goroutines; they hand
 // their results over under vwin.mu and post wmVideoUpdate, and only the
@@ -40,6 +40,7 @@ const (
 	vkSnap
 	vkSplit
 	vkSpeed
+	vkCrop
 )
 
 var vwin struct {
@@ -50,6 +51,7 @@ var vwin struct {
 	split    *ui.SplitDialog
 	press    [2]int // what a press in the Split window landed on (kind, point)
 	speed    *ui.SpeedDialog
+	crop     *ui.CropDialog
 	ctx      context.Context    // ends when the window closes
 	play     context.CancelFunc // stops the Speed window's playing preview
 	playAt   float64            // where in the video the preview last was
@@ -75,6 +77,7 @@ var vwin struct {
 	upThumbs map[int]*image.RGBA
 	upProg   float64
 	upAt     float64 // the video time of upFrame (the Speed preview)
+	upW, upH int     // the picture's size (the Crop window)
 }
 
 // showVideoWindow opens the window for id ("v:trim") on path, centred on
@@ -96,7 +99,7 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	}
 	vwin.path, vwin.id, vwin.label = path, id, label
 	vwin.info = conv.VideoInfo{}
-	vwin.trim, vwin.snap, vwin.split, vwin.speed = nil, nil, nil, nil
+	vwin.trim, vwin.snap, vwin.split, vwin.speed, vwin.crop = nil, nil, nil, nil, nil
 	vwin.play, vwin.playAt = nil, 0
 	vwin.press = [2]int{}
 	var w, h, tw, th, pw, ph int
@@ -167,6 +170,21 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 		}, sel)
 		w, h = vwin.speed.Size()
 		pw, ph = vwin.speed.PreviewSize() // no thumbnails; the preview plays
+	case "v:crop":
+		vwin.kind = vkCrop
+		vwin.crop = ui.NewCropDialog(scale, a.fonts, darkMode(), arabic, ui.CropLabels{
+			Title:         T("Crop Video", "اقتصاص الفيديو"),
+			File:          filepath.Base(path),
+			Ratio:         T("Aspect ratio", "نسبة الأبعاد"),
+			W:             T("W", "العرض"),
+			H:             T("H", "الارتفاع"),
+			Crop:          T("Crop", "اقتصاص"),
+			Preparing:     T("Preparing the video…", "جار تجهيز الفيديو…"),
+			PreviewFailed: T("Couldn't show the preview", "تعذّر عرض المعاينة"),
+			Ratios:        []string{T("Free", "حرّة"), "1:1", "16:9", "9:16", "4:3", "3:4"},
+		})
+		w, h = vwin.crop.Size()
+		pw, ph = vwin.crop.PreviewSize() // one still picture, no thumbnails
 	default:
 		return
 	}
@@ -186,6 +204,7 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	vwin.gen++
 	gen := vwin.gen
 	vwin.upReady, vwin.upFailed, vwin.upFrame, vwin.upThumbs, vwin.upProg = false, false, nil, map[int]*image.RGBA{}, -1
+	vwin.upW, vwin.upH = 0, 0
 	vwin.mu.Unlock()
 
 	refreshVideoWindow()
@@ -193,14 +212,17 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	pSetForegroundWindow.Call(vwin.wnd)
 	vwin.shown = true
 	logf("video window %s shown at %d,%d (%dx%d) for %s", id, vwin.x, vwin.y, w, h, filepath.Base(path))
-	go videoWork(ctx, gen, path, vwin.req, pw, ph, tw, th)
+	if vwin.crop != nil {
+		pSetTimer.Call(vwin.wnd, caretTimer, caretBlinkMs, 0)
+	}
+	go videoWork(ctx, gen, path, vwin.req, pw, ph, tw, th, vwin.crop != nil)
 }
 
 // videoWork gets FFmpeg if needed (the same download as every video job,
 // under engineMu), reads the video's length, then loads the thumbnails and
 // serves frame requests (pw×ph previews, tw×th thumbnails) until the
-// window closes.
-func videoWork(ctx context.Context, gen int, path string, req chan float64, pw, ph, tw, th int) {
+// window closes. size also reads the picture's size (the Crop window).
+func videoWork(ctx context.Context, gen int, path string, req chan float64, pw, ph, tw, th int, size bool) {
 	hand := func(f func()) bool { // hand a result to the window
 		vwin.mu.Lock()
 		ok := vwin.gen == gen
@@ -239,7 +261,14 @@ func videoWork(ctx context.Context, gen int, path string, req chan float64, pw, 
 		fail(errors.New("the video's length couldn't be read"))
 		return
 	}
-	if !hand(func() { vwin.upInfo, vwin.upReady, vwin.upProg = info, true, -1 }) {
+	var vw, vh int
+	if size {
+		if vw, vh = conv.VideoSize(path); vw <= 0 || vh <= 0 {
+			fail(errors.New("the video's size couldn't be read"))
+			return
+		}
+	}
+	if !hand(func() { vwin.upInfo, vwin.upReady, vwin.upProg, vwin.upW, vwin.upH = info, true, -1, vw, vh }) {
 		return
 	}
 	if tw > 0 {
@@ -282,7 +311,7 @@ func requestFrame(t float64) {
 func takeVideoUpdates() {
 	vwin.mu.Lock()
 	ready, failed, info, frame, prog := vwin.upReady, vwin.upFailed, vwin.upInfo, vwin.upFrame, vwin.upProg
-	thumbs, at := vwin.upThumbs, vwin.upAt
+	thumbs, at, vw, vh := vwin.upThumbs, vwin.upAt, vwin.upW, vwin.upH
 	vwin.upFrame, vwin.upThumbs = nil, map[int]*image.RGBA{}
 	vwin.mu.Unlock()
 	if d := vwin.trim; d != nil {
@@ -352,6 +381,21 @@ func takeVideoUpdates() {
 			vwin.playAt = at
 		}
 	}
+	if d := vwin.crop; d != nil {
+		d.Progress = prog
+		if failed {
+			d.Failed = true
+		}
+		if ready && !failed && d.VW == 0 {
+			vwin.info = info
+			d.SetVideo(vw, vh)
+			// a picture from the middle (the first frame is often black)
+			requestFrame(vwin.info.FrameSeek(vwin.info.Frames() / 2))
+		}
+		if frame != nil {
+			d.Frame = frame
+		}
+	}
 }
 
 // speedPlay (re)starts the Speed window's silent preview at the chosen
@@ -406,6 +450,7 @@ func hideVideoWindow() {
 	}
 	vwin.shown = false
 	pKillTimer.Call(vwin.wnd, savedTimer)
+	pKillTimer.Call(vwin.wnd, caretTimer)
 	if vwin.cancel != nil {
 		vwin.cancel()
 	}
@@ -434,6 +479,8 @@ func refreshVideoWindow() {
 		img = vwin.split.Render()
 	case vwin.speed != nil:
 		img = vwin.speed.Render()
+	case vwin.crop != nil:
+		img = vwin.crop.Render()
 	default:
 		return
 	}
@@ -468,6 +515,13 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 		}
 		return 0
 	case WM_TIMER:
+		if d := vwin.crop; wParam == caretTimer && d != nil {
+			if d.Field >= 0 {
+				d.CaretOn = !d.CaretOn
+				refreshVideoWindow()
+			}
+			return 0
+		}
 		if wParam == savedTimer {
 			pKillTimer.Call(hwnd, savedTimer)
 			if d := vwin.snap; d != nil {
@@ -515,7 +569,36 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			}
 		}
 		return 0
+	case WM_CHAR:
+		if d := vwin.crop; d != nil && d.Field >= 0 {
+			d.Char(rune(wParam))
+			refreshVideoWindow()
+		}
+		return 0
+	case WM_ACTIVATE:
+		if d := vwin.crop; d != nil && wParam&0xFFFF == 0 && d.Field >= 0 { // focus left the window
+			d.Commit()
+			refreshVideoWindow()
+		}
 	case WM_LBUTTONDOWN:
+		if d := vwin.crop; d != nil {
+			kind, i := d.HitTest(x, y)
+			vwin.press = [2]int{kind, i}
+			if kind != ui.CropField && d.Field >= 0 {
+				d.Commit()
+				refreshVideoWindow()
+			}
+			switch kind {
+			case ui.CropMove, ui.CropHandle:
+				d.StartDrag(kind, i, x, y)
+				pSetCapture.Call(hwnd)
+			case ui.CropNone:
+				vwin.drag = true
+				vwin.dragOff = POINT{int32(x), int32(y)}
+				pSetCapture.Call(hwnd)
+			}
+			return 0
+		}
 		if d := vwin.speed; d != nil {
 			if k, _ := d.HitTest(x, y); k == ui.SpeedNone {
 				vwin.drag = true
@@ -588,6 +671,11 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			trimMoveTo(d, x)
 			return 0
 		}
+		if d := vwin.crop; d != nil && d.Dragging() {
+			d.DragTo(x, y)
+			refreshVideoWindow()
+			return 0
+		}
 		if d := vwin.snap; d != nil && d.Dragging {
 			snapShow(d, d.FrameAtX(x))
 			return 0
@@ -623,6 +711,9 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 		if d := vwin.snap; d != nil && d.Dragging {
 			d.Dragging = false
 		}
+		if d := vwin.crop; d != nil {
+			d.EndDrag()
+		}
 		if vwin.split != nil && (vwin.press[0] == ui.SplitPoint || vwin.press[0] == ui.SplitStrip) {
 			vwin.press = [2]int{}
 		}
@@ -631,6 +722,33 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 		if vwin.drag {
 			vwin.drag = false
 			pReleaseCapture.Call()
+			return 0
+		}
+		if d := vwin.crop; d != nil {
+			press := vwin.press
+			vwin.press = [2]int{}
+			if d.Dragging() {
+				d.EndDrag()
+				pReleaseCapture.Call()
+				return 0
+			}
+			kind, i := d.HitTest(x, y)
+			if kind != press[0] || i != press[1] {
+				return 0 // pressed on one thing, released on another
+			}
+			switch kind {
+			case ui.CropClose:
+				hideVideoWindow()
+			case ui.CropChip:
+				d.SetRatio(i)
+				refreshVideoWindow()
+			case ui.CropField:
+				pSetForegroundWindow.Call(hwnd)
+				d.Focus(i)
+				refreshVideoWindow()
+			case ui.CropButton:
+				app.videoAction()
+			}
 			return 0
 		}
 		if d := vwin.speed; d != nil {
@@ -751,6 +869,29 @@ func (a *App) videoAction() {
 	if d := vwin.speed; d != nil {
 		a.speedStart(d)
 	}
+	if d := vwin.crop; d != nil {
+		a.cropStart(d)
+	}
+}
+
+// cropStart applies a number being typed, then closes the window and crops
+// in the progress window.
+func (a *App) cropStart(d *ui.CropDialog) {
+	d.Commit()
+	if !d.Ready() {
+		refreshVideoWindow()
+		return
+	}
+	path, x, y, w, h := vwin.path, d.X, d.Y, d.W, d.H
+	ww, wh := d.Size()
+	cx := vwin.x + int32(ww/2)
+	cy := vwin.y + int32(wh/2)
+	scale := d.Scale
+	hideVideoWindow()
+	logf("crop %s: %dx%d at %d,%d", filepath.Base(path), w, h, x, y)
+	a.launchVideoJob(path, vwin.id, vwin.label, cx, cy, scale, func(ctx context.Context, report func(float64)) (string, error) {
+		return conv.CropVideo(ctx, path, x, y, w, h, report)
+	})
 }
 
 // speedTitle is the progress window's title for a speed ("0.5×").
