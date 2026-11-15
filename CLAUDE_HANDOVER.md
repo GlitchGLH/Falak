@@ -258,6 +258,74 @@ updated once, before publishing.
   bytes, SHA-256 `fcb46d381f7882e0cdcd24538fac619918feb319122d49092d30847aa6748e4a`.
   Other build folders and `build/SHA256SUMS.txt` untouched (verified).
 
+### Phase 2d test results (owner, 2026-11-15)
+- EVERYTHING PASSED on `build/phase2d`: multi-file compress (dated folder, original
+  names), the .txt error card, the real cause "Access is denied" (Ctrl+C copies it), the
+  "already running" card, the helper question and hint cards in Arabic (correct « »,
+  «نعم» on the right), the open/close animation of every popup, the progress window
+  hiding instantly on a new drag.
+- Decision: the helper question card KEEPS X and Esc (both mean "No").
+
+### New features, phase 3 (2026-11-15; version stays 1.0.1)
+- Approved Arabic (owner, 2026-11-15): "Split Video" «تقسيم الفيديو», "Change Video Speed"
+  «تغيير سرعة الفيديو», "Add Split" «إضافة نقطة تقسيم», "Split" «تقسيم», "Change Speed"
+  «تغيير السرعة», "Speed" «السرعة», "Splitting" «جار التقسيم» (was already the Split title),
+  "Changing the speed to %s" «جار تغيير السرعة إلى %s», "Add at least one split point"
+  «أضف نقطة تقسيم واحدة على الأقل», counter: 0 «لا توجد نقاط تقسيم», 1 «نقطة تقسيم واحدة»,
+  2 «نقطتا تقسيم», 3-10 «%d نقاط تقسيم», 11+ «%d نقطة تقسيم» (English "0 split points",
+  "1 split point", "%d split points").
+- `f0e155a` "1.0.1: tests use only approved Arabic text": the message card tests use
+  «طريقة الاستخدام» and the helper hint's own sentence instead of two unapproved phrases.
+  RULE: test files may only contain the app's approved Arabic too.
+- `ad3d128` "1.0.1: file names read first in Arabic message lines". The owner reported the
+  card line "notes.txt: هذا الخيار …" with the name on the LEFT. It was NOT: a pixel match of
+  the owner's own screenshot (`Pictures\Screenshots\Screenshot 2026-11-15 170624.png`)
+  against the off-screen render gave 0 differing pixels, and its far right reads
+  ":notes.txt". The owner then confirmed the card is correct. Fixed instead: the Arabic
+  progress window drew "name · 45%" with the percent on the RIGHT (read first); now
+  `ui.subLine` puts the name first on the right and "45% ·" on its left. Tests:
+  `TestSubLineArabic`, `TestCardFileNameFirstArabic` (pixel test: the right end of the
+  Arabic line is the file name). Before/after PNGs in `Desktop\Falak phase 3 shots\task2-*`.
+- `cf39e6f` "1.0.1: Split Video window replaces split in half": `ui/splitdlg.go`
+  (preview, 8-thumbnail strip, white playhead, accent split points each with a round ×
+  above it; "Add Split" (quiet button, dimmed when no point fits at the playhead) on the
+  reading-start side, the counter on the other; red error line; Split), host in
+  `videowin_windows.go` (`splitPlayhead`, `splitSnap`, `splitCountText`, `splitStart`),
+  `conv/videotools.go` `SplitVideo` + `SplitGap`. A point is REMOVED by clicking its ×
+  (no text needed) or with Delete (the point last added or dragged). Points and the
+  playhead sit on frame starts; points keep `SplitGap` (whole frames, at least 0.1 s) from
+  the ends and each other; dragging a point moves the preview with it. Click/drag on the
+  strip moves the playhead; Left/Right step one frame (mirrored in Arabic); Enter = Split.
+  The playhead time shows in the preview's corner (reading-start side). Split with no
+  point shows «أضف نقطة تقسيم واحدة على الأقل» and stays open. Job: ONE FFmpeg run, x264
+  CRF 16 with `-force_key_frames` at the cuts and the segment muxer at the same times
+  (cut = FrameSeek of the point's frame, a quarter frame early, so the key frame lands on
+  that very frame), into "<name> - parts" (new " (n)" folder, never overwriting), parts
+  "<name> - part N" (.mp4/.mov/.mkv kept, else .mp4), sound kept. Wheel: SPLIT, disabled
+  for several files. Old SPLIT ½ removed (its dead message «هذا الفيديو أقصر من أن يُقسَم»
+  went with it). Tests: `TestSplitVideo`, `TestSplitPoints`, `TestSplitHitTest`,
+  `TestSplitCountText`, `TestWindowToolsOneVideo`.
+- `a17f3ad` "1.0.1: Change Video Speed window replaces speed 2x": `ui/speeddlg.go` (silent
+  playing preview, "Speed" label, 8 speed buttons 0.25× … 4× (slowest on the reading-start
+  side, mirrored in Arabic; 2× chosen at start), Change Speed), host `speedPlay`,
+  `speedStart`, `speedTitle`; `conv.SpeedVideo`, `conv.PlayPreview`, `atempoChain`. The
+  preview is ONE FFmpeg run per play (`-ss`, setpts, fps=24, scaled+padded to the preview,
+  raw RGBA on a pipe) paced by the reader; a new speed restarts it from the picture shown;
+  at the end it starts again from 0. Output "<name>-<speed>x.mp4" (e.g. -0.5x, -2x),
+  never overwriting. Sound keeps its pitch: atempo chained within 0.5..2 (0.25 = 0.5×0.5,
+  3 = 2×1.5, 4 = 2×2). No sound in the video: a silent output, no error. Frame rate stays
+  the video's own (`fps=` after setpts): faster drops frames, slower repeats them (0.25×
+  looks like a slide show at the source rate, no interpolation). Progress title
+  `launchVideoJobTitled` «جار تغيير السرعة إلى 0.5×». `ui.Visual` keeps "×" with its number
+  like "%" (it was drawn "×0.5"). Wheel: SPEED, disabled for several files. Old SPEED 2×
+  and its title «جار التسريع 2×» removed. Tests: `TestSpeedVideo`, `TestAtempoChain`,
+  `TestPlayPreview`, `TestSpeedChips`, `TestSpeedTitle`, `TestVisualSpeedTitle`.
+- Shots (local, not committed; `shots_windows_test.go` `TestShotsPhase3`,
+  `TestShotsPhase3Speed`): `C:\Users\Glitch\Desktop\Falak phase 3 shots`.
+- Test build: `build/phase3/Falak.exe` from `a17f3ad` (`vcs.modified=false`), 38,929,920
+  bytes, SHA-256 `6a3c01c2da8854024f8c11846df1d174406bf4f216d55b2f10faf2e1d71e5b7e`.
+  Other build folders and `build/SHA256SUMS.txt` untouched (verified).
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -461,9 +529,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phases 1 and 2 and the phase 2 decisions done (see above); the owner tested
-  `build/phase2b` (results above); `build/phase2c` was not tested; waiting for the test of
-  `build/phase2d/Falak.exe` (the three phase 2 fixes plus the message cards). `build/` still holds the 1.0.1
+- New features, phases 1, 2 and 3 done (see above); the owner tested `build/phase2d`
+  (everything passed); waiting for the test of `build/phase3/Falak.exe` (Split and Speed
+  windows, the Arabic progress line). `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -476,13 +544,11 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase2d/Falak.exe`: mixed multi-file compress, the
-   snapshot error's reason line, the popup animations and the new message cards (both
-   decisions taken, see "Falak message cards").
+5. Owner's manual test of `build/phase3/Falak.exe` (phase 3: Split, Speed, the Arabic
+   progress line "45% · name").
 6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
    folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
-7. Next video windows: Split (replaces SPLIT 1/2) + Speed (replaces SPEED 2x), then Crop;
-   their strings need the owner's Arabic first.
+7. Next video window: Crop; its strings need the owner's Arabic first.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -547,6 +613,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
+- Judging Arabic/Latin order by LOOKING at a rendered PNG is unreliable for the model (it
+  "reads" the line in logical order). Check order with pixels: crop each end, or match a
+  render of the Latin part alone against the line (see `TestCardFileNameFirstArabic`).
 - Testing a drop feature only through `conv.Run` misses the drop path: the wheel offers
   the FIRST file's item IDs and `applicable`/`planDrop` filter the selection. Test mixed
   selections through `planDrop` + `runDropFiles` (see `TestDropCompressMixed`).
@@ -699,7 +768,8 @@ rOut 147, rIn 60.5, rHole 52.3; render pipeline; hover springs; `segmentPath`;
 `segShadow`/`drawSegShadow`; `drawLiftedSegment`) · `menu.go` (tray menu model/draw, card
 colors dark {40,40,44} / light {255,255,255}) · `panel.go` (progress panel, solid `glassBase`) ·
 `compdialog.go` (Compress dialog model: `TargetMB`, `TargetTooBig`, `OriginalBytes`,
-`StartActive`) · `helpcard.go` · `msgcard.go` (message card) · `popanim.go` (the wheel's open/close for
+`StartActive`) · `helpcard.go` · `msgcard.go` (message card) · `splitdlg.go` (Split Video) · `speeddlg.go` (Change
+Video Speed) · `popanim.go` (the wheel's open/close for
 popups) · `icons.go` (supersampled line icons) · `fonts.go` (Inter/Amiri)
 · `blur.go` (FrostBackground, GaussianBlur, box blurs) · `textblock.go` ·
 tests: `lift_test.go`, `seam_test.go` (hover-seam regression), `menu_test.go`, `visual_test.go`,
