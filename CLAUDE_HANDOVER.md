@@ -478,6 +478,42 @@ updated once, before publishing.
   Proposed English: "... and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds
   only images converts to PDF)." Waiting for the owner's Arabic.
 
+### FINAL build 2.0.0 (2026-11-15, from `88ac8d8`; not published yet)
+- `8849565` "2.0.0: Arabic release notes and README formatting": owner's decisions: bold in
+  the Arabic 2.0.0 notes on the same parts as the English section (item names and
+  «حركة بطيئة ناعمة»; Markdown only, letters checked unchanged), and the Arabic comma «،»
+  between «(الصور الشفافة)» and «MERGE PDF» in the Arabic README.
+- `88ac8d8` "2.0.0: How to use card mentions image archives to PDF": the end of the
+  "Supported" line in `helpText()` (English as proposed, the owner's Arabic), checked byte
+  for byte; the card still fits (scrolled to the end nothing is cut, OK visible, both
+  languages); the four `docs/how-to-use-*` PNGs re-rendered (top view: only the scrollbar
+  thumb differs). Seen, NOT changed (old, not in this round): in the Arabic card the
+  engines line shows faint marks beside the brackets, the RLM (U+200F) characters before
+  "(GPL)" etc. drawn by the font.
+- The unpublished 1.0.1 files were MOVED (not deleted) to `build/1.0.1/` (`Falak.exe`,
+  `FalakSetup-1.0.1.exe`, `Falak-1.0.1-portable.zip`, `SHA256SUMS.txt`); `sha256sum -c` OK
+  after the move. `build/phase1` ... `build/phase5` untouched (hashes compared).
+- Built from a clean tree at `88ac8d8` after all gates passed, exactly as in Environment
+  (shots file moved out during `go build`; NSIS staging in `build/nsis`, removed after;
+  makensis with no warnings; `make_portable.py`):
+
+  | File | Bytes | SHA-256 |
+  |---|---|---|
+  | `build/Falak.exe` | 38,981,632 | `6356f653e949bac0b53d6872be500ae651c6c63013b74575e0c4f60d45a3f7d2` |
+  | `build/FalakSetup-2.0.0.exe` | 12,683,847 | `cbc5d1547ebc0a91160b625f05084245c4d75f7f555a4324a87579e1d5db9069` |
+  | `build/Falak-2.0.0-portable.zip` | 17,047,928 | `cc760e08ee4f61568321257506b55f9e7f112a6c9c9cce978b7399f70da141dd` |
+
+  Verified: `vcs.revision=88ac8d886d6ea0da2a0ea4a816b41d1e216df44e`, `vcs.modified=false`,
+  tags `wasm2go,nodynamic`; FileVersion / ProductVersion 2.0.0.0 in Falak.exe and the Setup
+  (OriginalFilename FalakSetup-2.0.0.exe); the zip holds exactly Falak.exe, README.txt,
+  THIRD_PARTY_LICENSES.txt; the Falak.exe in the zip and in the Setup payload (7-Zip
+  extraction) are byte-identical to `build/Falak.exe`, the zip's texts identical to the
+  repo's; no shots strings in the exe. `build/SHA256SUMS.txt` (LF, "hash  name") holds the
+  three hashes; `sha256sum -c` OK. `audit_paths.py` now checks the 2.0.0 zip too (passed).
+- `7436702` "2.0.0: release notes checksums for the final build": the three hashes in the
+  2.0.0 section of RELEASE_NOTES.md (one block for both languages, as in 1.0.0); the
+  VirusTotal link stays a placeholder. Docs only: the build is NOT redone after it.
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -681,31 +717,28 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- Release preparation for **2.0.0** (see "Release preparation 2.0.0"). All features are done
-  and tested by the owner (phase 4 passed). Version, screenshots, the English README and
-  the English 2.0.0 release notes are committed; `build/phase5/Falak.exe` (2.0.0.0) waits
-  for the owner's check. `build/` still holds the unpublished 1.0.1 files (`Falak.exe`,
-  `FalakSetup-1.0.1.exe`, `Falak-1.0.1-portable.zip`, `SHA256SUMS.txt`); 1.0.1 will never be
-  published. The user who had the blocked wheel confirmed 1.0.1 fixed it (2026-11-15).
+- **2.0.0 final build done** (see "FINAL build 2.0.0"): `build/Falak.exe`,
+  `build/FalakSetup-2.0.0.exe`, `build/Falak-2.0.0-portable.zip`, `build/SHA256SUMS.txt`
+  from `88ac8d8`. README (EN + AR), the How to use card and the 2.0.0 release notes (EN + AR,
+  with checksums) are final except the VirusTotal link. The 1.0.1 files are in
+  `build/1.0.1/` (never published); `build/phase1` ... `phase5` still there.
 
 ### NEXT (release steps still to do, in order)
-1. Owner's check of `build/phase5/Falak.exe`: the version in the tray menu and in the file
-   properties.
-2. DONE (2026-11-15): the Arabic README part and the Arabic 2.0.0 release notes
-   (`60ff2fa`, `0fc92c3`). installer/portable/README.txt needed only the version.
-3. The How to use card's "Supported" line: add image archives to PDF in English and in
-   the owner's Arabic (proposal in "Arabic release texts"), together with the final build.
-4. Final build from a clean tree: `build/Falak.exe`, `FalakSetup-2.0.0.exe`,
-   `Falak-2.0.0-portable.zip`, a new `build/SHA256SUMS.txt`, `verify-install.ps1`,
-   `audit_paths.py` (now also checks the 2.0.0 zip). Do NOT delete the 1.0.1 files or
-   `build/phase1` ... `phase5` until the owner has installed and tested 2.0.0.
-5. Owner's manual test of the Setup and the portable zip.
-6. VirusTotal scan of the 2.0.0 files (owner); fill RELEASE_NOTES.md checksums and the
-   VirusTotal link; README's "VirusTotal scan of the 1.0.0 installer" line -> the 2.0.0
-   scan (both languages: the Arabic part has no such line today).
-7. Only on the owner's explicit approval: tag `v2.0.0`, push `main`, GitHub release
-   "Falak 2.0.0" with `FalakSetup-2.0.0.exe`, `Falak-2.0.0-portable.zip`,
-   `SHA256SUMS.txt`; download back and `sha256sum -c`. The v1.0.0 release stays untouched.
+1. Owner's manual test of the final files: upgrade from `build/1.0.1/FalakSetup-1.0.1.exe`
+   to `build/FalakSetup-2.0.0.exe` (version in the tray menu, settings kept, main features),
+   the portable zip in a new folder, uninstall keeping and deleting settings.
+2. Owner's VirusTotal scan of the three files (by hand). Then: the FalakSetup-2.0.0.exe
+   scan link in RELEASE_NOTES.md (replace the placeholder) and README's VirusTotal line
+   (English "VirusTotal scan of the 1.0.0 installer" -> 2.0.0; the Arabic part has no
+   such line: adding one needs the owner's Arabic). Docs only, no rebuild: the hashes in
+   the notes must stay those of the tested files.
+3. After the owner's approval only: delete `build/1.0.1/` and `build/phase1` ...
+   `build/phase5`.
+4. Only on the owner's explicit approval: tag `v2.0.0` on the commit that holds the final
+   docs (the exe was built from `88ac8d8`; later commits are docs only), push `main` (never
+   force), GitHub release "Falak 2.0.0" with `FalakSetup-2.0.0.exe`,
+   `Falak-2.0.0-portable.zip`, `SHA256SUMS.txt` and the 2.0.0 notes; download the assets
+   back and `sha256sum -c`. The v1.0.0 release and its assets stay untouched.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -758,8 +791,10 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   2. Setup: copy `installer/falak.nsi`, `raha-nsis.ico`, `license.txt` and `build/Falak.exe`
      into `build/nsis/installer/`, `THIRD_PARTY_LICENSES.txt` into `build/nsis/`, run
      `makensis -INPUTCHARSET UTF8 C:\Projects\Falak\build\nsis\installer\falak.nsi`
-     (output `build/FalakSetup-1.0.0.exe`), then delete `build/nsis`.
-  3. `py installer/make_portable.py` → `build/Falak-1.0.0-portable.zip`.
+     (output `build/FalakSetup-<version>.exe`, now 2.0.0), then delete `build/nsis`.
+  3. `py installer/make_portable.py` → `build/Falak-<version>-portable.zip`.
+  4. Check: 7-Zip (`C:\Program Files\7-Zip\7z.exe x`) opens the Setup; its Falak.exe must
+     be byte-identical to `build/Falak.exe`, like the zip's.
 - Logs on the owner's machine: `%LOCALAPPDATA%\Falak\falak.log` (readable; very useful).
 - README screenshots: `shots_windows_test.go` (repo root, build tags `windows && shots`, so it
   is never in Falak.exe nor in the normal tests) renders 20 PNGs off-screen with the app's
