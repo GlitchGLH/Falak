@@ -75,6 +75,43 @@ section wins over anything older below it. Arabic is quoted character for charac
   - `C:\Users\Glitch\Desktop\Falak-1.0.0-release`
   - `C:\Users\Glitch\Desktop\Falak with Claude Code\Falak-1.0.0-release`
 
+### New features, phase 1 (2026-11-15; version stays 1.0.1)
+- `2c8bf1c` "1.0.1: compressing several files saves them in a dated folder": when two or more
+  files are compressed together (Compress tool of any kind: `compress`, `v:compress`,
+  `a:compress`, `p:compress`; counted after `applicable()`), each source folder gets a new
+  folder `Compressed 2026-11-15 05-30` (local time at the drop; `conv.CompressFolderName`) and
+  that folder's copies go in it, named as before (`<name>-compressed.<ext>`). Owner's decision:
+  files from different folders get one dated folder in EACH source folder. An existing folder
+  is never reused (`makeFolder` = `os.Mkdir` on the `nameSeries`, so " (1)", " (2)" ...); a
+  folder left empty (all files failed or the job was cancelled) is removed at the end; a folder
+  that cannot be created leaves that folder's copies beside the originals. One file is
+  unchanged. The output folder reaches the tools through the context (`conv.WithOutDir`,
+  `outPath`). The compress dialog is untouched (it only opens for ONE video; several videos
+  are compressed Balanced without it, as before). Code: `conv/compressfolder.go`, tests
+  `conv/compressfolder_test.go`; job wiring in `main_windows.go` (`onDrop`).
+- `4f166b1` "1.0.1: image-only archives convert to PDF": ZIP, RAR and 7Z show a `PDF` target
+  (always shown; enabled only when every file is an image Falak reads, at least one).
+  Companion files are IGNORED (owner's decision): `Thumbs.db`, `desktop.ini`, `.DS_Store` and
+  anything under a `__MACOSX` folder. Pages: one image per page via `imagesToPDF` (the MERGE
+  PDF writer; JPEG kept as is), in natural order folder by folder along the path (2 before 10,
+  case ignored, extension only breaks ties: `img` before `img 2`; `sortPages`). The images are
+  extracted to a hidden temp folder as `<page><ext>` (no archive name used as a path), the PDF
+  is `<archive name>.pdf` beside the archive (never replaces). Reading the list is fast (ZIP
+  586 MB / 2000 entries: 10 ms; 7Z 2000 entries: under 8 ms; RAR skips the data by seeking)
+  and is cached per path+size+time (the wheel asks every frame). An SVG inside downloads resvg
+  first (`NeedsResvg(path, id)`). TAR/GZ do not offer PDF. Two errors that the wheel cannot
+  reach are English only until the owner gives Arabic: "This archive doesn't hold only
+  images", "Couldn't read %s from the archive". No RAR test (no WinRAR on this machine to
+  make one). Code: `conv/archivepdf.go`, tests `conv/archivepdf_test.go`.
+- Test build (not a release): `build/phase1/Falak.exe` from `4f166b1`
+  (`vcs.modified=false`), 38,734,848 bytes, SHA-256
+  `63a3eddc5357de3d205f24f8eba1ad9dcec0e09ef3f7ee52b441c4a33b68f3c5`. Kept apart so the 1.0.1
+  files and `build/SHA256SUMS.txt` stay valid. Running it replaces the installed Falak.exe (the
+  self-copy); FalakSetup-1.0.1.exe puts 1.0.1 back.
+- Video windows (Split, Snapshots, Speed, Crop, Trim, like the Tangerine app): investigated
+  only, nothing implemented. Proposed order: Trim + Snapshots, then Split + Speed, then Crop.
+  Every English string they need waits for the owner's Arabic.
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -278,9 +315,11 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- Nothing in progress. `build/` holds the 1.0.1 build from `961a735` (not published). The
-  user who had the blocked wheel confirmed 1.0.1 fixes it (2026-11-15). GitHub release
-  postponed until new features are added (owner's decision).
+- New features, phase 1 done (see above); waiting for the owner's manual test of
+  `build/phase1/Falak.exe` and answers on the video windows. `build/` still holds the 1.0.1
+  build from `961a735` (not published; it predates the new features, so a release with them
+  needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
+  (2026-11-15). GitHub release postponed until new features are added (owner's decision).
 
 ### NEXT
 1. Owner's manual test of 1.0.1.
@@ -290,6 +329,10 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
+5. Owner's manual test of phase 1 (`build/phase1/Falak.exe`): compress folder, archive PDF.
+6. Arabic for the two English-only archive errors; README formats table (archive -> PDF)
+   needs the owner's Arabic too.
+7. Video windows: owner's answers and Arabic strings, then implement one or two per round.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
