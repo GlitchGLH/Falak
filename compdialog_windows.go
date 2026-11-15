@@ -280,12 +280,18 @@ func (a *App) launchCompress(path string, plan conv.CompressPlan, label string, 
 // launchVideoJob runs one video job of a dialog or video window (compress,
 // trim): FFmpeg first if it is missing, then run, in the progress window.
 func (a *App) launchVideoJob(path, id, label string, cx, cy int32, scale float64, run func(ctx context.Context, report func(float64)) (string, error)) {
+	a.launchVideoJobTitled(path, id, label, jobTitle(id, label), cx, cy, scale, run)
+}
+
+// launchVideoJobTitled is launchVideoJob with the progress window's title
+// given (the Speed window's names the speed).
+func (a *App) launchVideoJobTitled(path, id, label, title string, cx, cy int32, scale float64, run func(ctx context.Context, report func(float64)) (string, error)) {
 	a.jobSeq++
 	job := a.jobSeq
 	jobProgress.Store(job, -1.0)
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancels[job] = cancel
-	a.pending = &panelReq{job: job, title: jobTitle(id, label), file: filepath.Base(path),
+	a.pending = &panelReq{job: job, title: title, file: filepath.Base(path),
 		cx: cx, cy: cy, scale: scale}
 	a.setClickThrough(true)
 	a.syncFlags()

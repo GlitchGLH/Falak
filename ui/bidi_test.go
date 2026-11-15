@@ -78,3 +78,20 @@ func TestCardFileNameFirstArabic(t *testing.T) {
 		t.Errorf("the right end of the line is not the file name (%d of %d ink pixels differ in x %d..%d)", bad, ink, minX, maxX)
 	}
 }
+
+// TestVisualSpeedTitle: in «جار تغيير السرعة إلى %s» the speed reads as
+// "0.5×" (the × right after the number), on the left end where the
+// Arabic sentence finishes; the Split counter's number stays first.
+func TestVisualSpeedTitle(t *testing.T) {
+	for _, sp := range []string{"0.25×", "0.5×", "2×", "4×"} {
+		if v := Visual("جار تغيير السرعة إلى " + sp); !strings.HasPrefix(v, sp+" ") {
+			t.Errorf("%s: drawn as %q, want it to start with %q", sp, v, sp+" ")
+		}
+	}
+	if v := Visual("3 نقاط تقسيم"); !strings.HasSuffix(v, " 3") {
+		t.Errorf("the counter is drawn as %q, want the number at the right end", v)
+	}
+	if v := Visual("11 نقطة تقسيم"); !strings.HasSuffix(v, " 11") {
+		t.Errorf("the counter is drawn as %q, want 11 at the right end", v)
+	}
+}

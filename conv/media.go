@@ -533,7 +533,7 @@ var videoEncode = map[string][]string{
 func videoItems(path string) []Item { return formatItems(videoTargets, normalizeOwn(path)) }
 
 // videoTools lists the video tools for a selection. The windows (Trim,
-// Snapshots, Split) work on one video, so they are shown disabled
+// Snapshots, Split, Speed) work on one video, so they are shown disabled
 // for several files.
 func videoTools(paths []string) []Item {
 	one := len(paths) == 1
@@ -542,7 +542,7 @@ func videoTools(paths []string) []Item {
 		{"v:trim", "TRIM", "trim", one},
 		{"v:metadata", "METADATA", "metadata", true},
 		{"v:mute", "MUTE", "mute", true},
-		{"v:speed", "SPEED 2×", "speed", true},
+		{"v:speed", "SPEED", "speed", one},
 		{"v:snapshot", "SNAPSHOT", "snapshot", one},
 		{"v:split", "SPLIT", "split", one},
 	}
@@ -575,15 +575,6 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 	case id == "v:mute":
 		dst := uniquePath(path, "-muted", ext)
 		return ffmpeg(ctx, path, dst, []string{"-map", "0:v", "-c", "copy", "-an"}, mi.duration, progress)
-	case id == "v:speed":
-		// twice as fast, sound included (pitch kept)
-		dst := uniquePath(path, "-2x", ".mp4")
-		args := []string{"-map", "0:v:0", "-map", "0:a:0?", "-filter:v", "setpts=0.5*PTS",
-			"-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p"}
-		if mi.hasAudio {
-			args = append(args, "-filter:a", "atempo=2.0", "-c:a", "aac", "-b:a", "192k")
-		}
-		return ffmpeg(ctx, path, dst, args, mi.duration/2, progress)
 	}
 	return "", errors.New(tr("This tool isn't available yet", "هذه الأداة غير متاحة بعد"))
 }

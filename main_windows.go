@@ -1479,8 +1479,6 @@ func jobTitle(id, label string) string {
 		return T("Adding a white background", "جار إضافة خلفية بيضاء")
 	case "mute":
 		return T("Removing the sound", "جار إزالة الصوت")
-	case "speed":
-		return T("Speeding up 2×", "جار التسريع 2×")
 	case "snapshot":
 		return T("Taking a snapshot", "جار التقاط صورة")
 	case "split":

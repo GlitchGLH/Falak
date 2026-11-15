@@ -2,8 +2,8 @@
 
 package main
 
-// The video windows (Trim Video, Video Snapshots, Split Video; later
-// Speed, Crop): our
+// The video windows (Trim Video, Video Snapshots, Split Video, Change
+// Video Speed; later Crop): our
 // own layered window like the Compress dialog, opening where the wheel was.
 // Frames and thumbnails come from FFmpeg on other goroutines; they hand
 // their results over under vwin.mu and post wmVideoUpdate, and only the
@@ -39,6 +39,7 @@ const (
 	vkTrim = iota + 1
 	vkSnap
 	vkSplit
+	vkSpeed
 )
 
 var vwin struct {
@@ -48,6 +49,10 @@ var vwin struct {
 	snap     *ui.SnapDialog
 	split    *ui.SplitDialog
 	press    [2]int // what a press in the Split window landed on (kind, point)
+	speed    *ui.SpeedDialog
+	ctx      context.Context    // ends when the window closes
+	play     context.CancelFunc // stops the Speed window's playing preview
+	playAt   float64            // where in the video the preview last was
 	path     string
 	id       string // the wheel item ("v:trim")
 	label    string // its wheel label, for the job's title and results
@@ -69,6 +74,7 @@ var vwin struct {
 	upFrame  *image.RGBA
 	upThumbs map[int]*image.RGBA
 	upProg   float64
+	upAt     float64 // the video time of upFrame (the Speed preview)
 }
 
 // showVideoWindow opens the window for id ("v:trim") on path, centred on
@@ -90,7 +96,8 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	}
 	vwin.path, vwin.id, vwin.label = path, id, label
 	vwin.info = conv.VideoInfo{}
-	vwin.trim, vwin.snap, vwin.split = nil, nil, nil
+	vwin.trim, vwin.snap, vwin.split, vwin.speed = nil, nil, nil, nil
+	vwin.play, vwin.playAt = nil, 0
 	vwin.press = [2]int{}
 	var w, h, tw, th, pw, ph int
 	switch id {
@@ -134,6 +141,27 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 		w, h = vwin.split.Size()
 		tw, th = vwin.split.ThumbSize()
 		pw, ph = vwin.split.PreviewSize()
+	case "v:speed":
+		vwin.kind = vkSpeed
+		chips := make([]string, len(conv.Speeds))
+		sel := 0
+		for i, s := range conv.Speeds {
+			chips[i] = conv.SpeedText(s) + "×"
+			if s == 2 { // the old SPEED 2× is where the choice starts
+				sel = i
+			}
+		}
+		vwin.speed = ui.NewSpeedDialog(scale, a.fonts, darkMode(), arabic, ui.SpeedLabels{
+			Title:         T("Change Video Speed", "تغيير سرعة الفيديو"),
+			File:          filepath.Base(path),
+			Speed:         T("Speed", "السرعة"),
+			Change:        T("Change Speed", "تغيير السرعة"),
+			Preparing:     T("Preparing the video…", "جار تجهيز الفيديو…"),
+			PreviewFailed: T("Couldn't show the preview", "تعذّر عرض المعاينة"),
+			Chips:         chips,
+		}, sel)
+		w, h = vwin.speed.Size()
+		pw, ph = vwin.speed.PreviewSize() // no thumbnails; the preview plays
 	default:
 		return
 	}
@@ -147,7 +175,7 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	vwin.y = clamp32(cy-int32(h)/2, mi.RcWork.Top, mi.RcWork.Bottom-int32(h))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	vwin.cancel = cancel
+	vwin.cancel, vwin.ctx = cancel, ctx
 	vwin.req = make(chan float64, 1)
 	vwin.mu.Lock()
 	vwin.gen++
@@ -249,7 +277,7 @@ func requestFrame(t float64) {
 func takeVideoUpdates() {
 	vwin.mu.Lock()
 	ready, failed, info, frame, prog := vwin.upReady, vwin.upFailed, vwin.upInfo, vwin.upFrame, vwin.upProg
-	thumbs := vwin.upThumbs
+	thumbs, at := vwin.upThumbs, vwin.upAt
 	vwin.upFrame, vwin.upThumbs = nil, map[int]*image.RGBA{}
 	vwin.mu.Unlock()
 	if d := vwin.trim; d != nil {
@@ -304,6 +332,67 @@ func takeVideoUpdates() {
 			}
 		}
 	}
+	if d := vwin.speed; d != nil {
+		d.Progress = prog
+		if failed {
+			d.Failed = true
+		}
+		if ready && !failed && d.Duration == 0 {
+			vwin.info = info
+			d.Duration = info.Duration
+			speedPlay(0)
+		}
+		if frame != nil {
+			d.Frame = frame
+			vwin.playAt = at
+		}
+	}
+}
+
+// speedPlay (re)starts the Speed window's silent preview at the chosen
+// speed from from seconds; at the end it starts again from the beginning.
+// It stops when the window closes or the speed changes.
+func speedPlay(from float64) {
+	d := vwin.speed
+	if d == nil || vwin.ctx == nil {
+		return
+	}
+	if vwin.play != nil {
+		vwin.play()
+	}
+	ctx, stop := context.WithCancel(vwin.ctx)
+	vwin.play = stop
+	vwin.mu.Lock()
+	gen := vwin.gen
+	vwin.mu.Unlock()
+	path, speed := vwin.path, conv.Speeds[d.Sel]
+	pw, ph := d.PreviewSize()
+	wnd := vwin.wnd
+	logf("speed preview of %s at %s× from %.2f s", filepath.Base(path), conv.SpeedText(speed), from)
+	go func() {
+		for pos := from; ctx.Err() == nil; pos = 0 {
+			shown := 0
+			err := conv.PlayPreview(ctx, path, pos, speed, pw, ph, func(img *image.RGBA, at float64) {
+				shown++
+				vwin.mu.Lock()
+				ok := vwin.gen == gen && ctx.Err() == nil
+				if ok {
+					vwin.upFrame, vwin.upAt = img, at
+				}
+				vwin.mu.Unlock()
+				if ok {
+					pPostMessageW.Call(wnd, wmVideoUpdate, 0, 0)
+				}
+			})
+			if ctx.Err() != nil {
+				return
+			}
+			if err != nil || shown == 0 {
+				logf("speed preview stopped: %v (%d pictures)", err, shown)
+				return
+			}
+		}
+	}()
 }
 
 func hideVideoWindow() {
@@ -338,6 +427,8 @@ func refreshVideoWindow() {
 		img = vwin.snap.Render()
 	case vwin.split != nil:
 		img = vwin.split.Render()
+	case vwin.speed != nil:
+		img = vwin.speed.Render()
 	default:
 		return
 	}
@@ -402,6 +493,16 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 				fr := vwin.info.FrameRate()
 				splitPlayhead(d, vwin.info.FrameTime(int(math.Round(d.Playhead*fr))+n))
 			}
+			if d := vwin.speed; d != nil && d.Ready() {
+				n := 1 // towards that side of the row (mirrored in Arabic)
+				if (wParam == VK_LEFT) != d.RTL {
+					n = -1
+				}
+				if d.Step(n) {
+					speedPlay(vwin.playAt)
+					refreshVideoWindow()
+				}
+			}
 		case VK_DELETE: // removes the point last added or dragged
 			if d := vwin.split; d != nil && d.Sel >= 0 {
 				d.Remove(d.Sel)
@@ -410,6 +511,14 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 		}
 		return 0
 	case WM_LBUTTONDOWN:
+		if d := vwin.speed; d != nil {
+			if k, _ := d.HitTest(x, y); k == ui.SpeedNone {
+				vwin.drag = true
+				vwin.dragOff = POINT{int32(x), int32(y)}
+				pSetCapture.Call(hwnd)
+			}
+			return 0
+		}
 		if d := vwin.split; d != nil {
 			kind, i := d.HitTest(x, y)
 			vwin.press = [2]int{kind, i}
@@ -519,6 +628,21 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			pReleaseCapture.Call()
 			return 0
 		}
+		if d := vwin.speed; d != nil {
+			switch k, i := d.HitTest(x, y); k {
+			case ui.SpeedClose:
+				hideVideoWindow()
+			case ui.SpeedChip:
+				if i != d.Sel {
+					d.Sel = i
+					speedPlay(vwin.playAt)
+					refreshVideoWindow()
+				}
+			case ui.SpeedButton:
+				app.videoAction()
+			}
+			return 0
+		}
 		if d := vwin.split; d != nil {
 			press := vwin.press
 			vwin.press = [2]int{}
@@ -616,6 +740,30 @@ func (a *App) videoAction() {
 	if d := vwin.split; d != nil {
 		a.splitStart(d)
 	}
+	if d := vwin.speed; d != nil {
+		a.speedStart(d)
+	}
+}
+
+// speedTitle is the progress window's title for a speed ("0.5×").
+func speedTitle(speed float64) string {
+	return fmt.Sprintf(T("Changing the speed to %s", "جار تغيير السرعة إلى %s"), conv.SpeedText(speed)+"×")
+}
+
+// speedStart closes the window and changes the speed in the progress window.
+func (a *App) speedStart(d *ui.SpeedDialog) {
+	if !d.Ready() {
+		return
+	}
+	path, speed := vwin.path, conv.Speeds[d.Sel]
+	cx := vwin.x + int32(float64(d.W)/2)
+	cy := vwin.y + int32(float64(d.H)/2)
+	scale := d.Scale
+	hideVideoWindow()
+	logf("speed %s: %s×", filepath.Base(path), conv.SpeedText(speed))
+	a.launchVideoJobTitled(path, vwin.id, vwin.label, speedTitle(speed), cx, cy, scale, func(ctx context.Context, report func(float64)) (string, error) {
+		return conv.SpeedVideo(ctx, path, speed, report)
+	})
 }
 
 // splitSnap puts time t on the start of the nearest frame, so a point or

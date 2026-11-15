@@ -2,10 +2,12 @@ package conv
 
 import (
 	"context"
+	"image"
 	"math"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // TestSplitVideo: three parts cut exactly at the two points (given in any
@@ -62,5 +64,89 @@ func TestSplitVideo(t *testing.T) {
 		if g := SplitGap(VideoInfo{Duration: 6, FPS: c.fps}); math.Abs(g-c.want) > 1e-9 {
 			t.Errorf("gap at %v fps: %v, want %v (whole frames, at least MinTrim)", c.fps, g, c.want)
 		}
+	}
+}
+
+func TestAtempoChain(t *testing.T) {
+	for speed, want := range map[float64]string{
+		0.25: "atempo=0.5,atempo=0.5", 0.5: "atempo=0.5", 0.75: "atempo=0.75", 1.25: "atempo=1.25",
+		1.5: "atempo=1.5", 2: "atempo=2", 3: "atempo=2,atempo=1.5", 4: "atempo=2,atempo=2",
+	} {
+		if got := atempoChain(speed); got != want {
+			t.Errorf("%v: %q, want %q", speed, got, want)
+		}
+	}
+	if SpeedText(0.25) != "0.25" || SpeedText(2) != "2" || SpeedText(1.5) != "1.5" {
+		t.Error("SpeedText")
+	}
+}
+
+// TestSpeedVideo: "<name>-<speed>x.mp4" beside the original at the new
+// length, the sound kept (and as long as the picture), the frame rate
+// kept; never replacing a file; a video without sound stays silent.
+func TestSpeedVideo(t *testing.T) {
+	clip := makeClip(t, 4)
+	ctx := context.Background()
+	for _, c := range []struct {
+		speed float64
+		name  string
+	}{{0.5, "clip-0.5x.mp4"}, {4, "clip-4x.mp4"}, {0.25, "clip-0.25x.mp4"}, {0.5, "clip-0.5x (1).mp4"}} {
+		out, err := SpeedVideo(ctx, clip, c.speed, nil)
+		if err != nil {
+			t.Fatalf("%v: %v", c.speed, err)
+		}
+		if want := filepath.Join(filepath.Dir(clip), c.name); out != want {
+			t.Errorf("%v: output %s, want %s", c.speed, out, want)
+		}
+		mi := probe(out)
+		if want := 4 / c.speed; math.Abs(mi.duration-want) > 0.15 {
+			t.Errorf("%v: %.3f s, want %.3f", c.speed, mi.duration, want)
+		}
+		if !mi.hasAudio {
+			t.Errorf("%v: the sound is gone", c.speed)
+		}
+		if math.Abs(mi.fps-24) > 0.01 {
+			t.Errorf("%v: %v fps, want the original 24", c.speed, mi.fps)
+		}
+	}
+	silent := filepath.Join(filepath.Dir(clip), "silent.mp4")
+	if _, err := ffmpeg(ctx, clip, silent, []string{"-map", "0:v", "-c", "copy", "-an"}, 4, nil); err != nil {
+		t.Fatal(err)
+	}
+	out, err := SpeedVideo(ctx, silent, 2, nil)
+	if err != nil {
+		t.Fatalf("a video without sound: %v", err)
+	}
+	if mi := probe(out); mi.hasAudio || math.Abs(mi.duration-2) > 0.15 {
+		t.Errorf("a video without sound: %.3f s, sound %v", mi.duration, mi.hasAudio)
+	}
+}
+
+// TestPlayPreview: the preview plays at the chosen speed (twice as fast:
+// 1 s of video in about 0.5 s, 24 pictures a second), each picture the
+// asked size, and ends at the end of the video.
+func TestPlayPreview(t *testing.T) {
+	clip := makeClip(t, 2)
+	n, last := 0, 0.0
+	start := time.Now()
+	err := PlayPreview(context.Background(), clip, 1, 2, 64, 36, func(img *image.RGBA, at float64) {
+		if img.Rect.Dx() != 64 || img.Rect.Dy() != 36 {
+			t.Fatalf("picture %v", img.Rect)
+		}
+		n++
+		last = at
+	})
+	took := time.Since(start).Seconds()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n < 10 || n > 14 {
+		t.Errorf("%d pictures for 1 s at 2×, want about 12", n)
+	}
+	if last < 1.8 || last > 2.01 {
+		t.Errorf("the last picture is from %.3f s, want about 2", last)
+	}
+	if took < 0.4 || took > 1.5 {
+		t.Errorf("1 s at 2× took %.2f s to play, want about 0.5", took)
 	}
 }

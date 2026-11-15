@@ -16,8 +16,8 @@ import (
 	"golang.org/x/image/bmp"
 )
 
-// The shared base of the video windows (Trim, Snapshots, later Split, Speed
-// and Crop): the video's length and frame rate, single frames for the
+// The shared base of the video windows (Trim, Snapshots, Split, Speed,
+// later Crop): the video's length and frame rate, single frames for the
 // preview, a strip of thumbnails, and the cuts (the time display is
 // ui.FormatClock). Frames
 // come from the installed FFmpeg, one short run per picture: on a 1080p
@@ -132,7 +132,7 @@ func Thumbs(ctx context.Context, path string, duration float64, n, maxW, maxH in
 // running at once (the window then starts the work itself).
 func OpensWindow(id string) bool {
 	switch id {
-	case "v:trim", "v:snapshot", "v:split":
+	case "v:trim", "v:snapshot", "v:split", "v:speed":
 		return true
 	}
 	return false

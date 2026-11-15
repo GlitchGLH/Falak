@@ -380,9 +380,9 @@ func Visual(s string) string {
 			lvl[i] = 1
 		}
 	}
-	for i := 1; i < n; i++ { // a percent sign stays with its number
+	for i := 1; i < n; i++ { // a percent or times sign stays with its number ("50%", "0.5×")
 		c := shaped[i]
-		if (c == '%' || c == '٪') && shaped[i-1] >= '0' && shaped[i-1] <= '9' {
+		if (c == '%' || c == '٪' || c == '×') && shaped[i-1] >= '0' && shaped[i-1] <= '9' {
 			lvl[i] = 2
 		}
 	}
