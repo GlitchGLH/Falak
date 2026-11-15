@@ -453,6 +453,10 @@ func mirror(c rune) rune {
 		return '>'
 	case '>':
 		return '<'
+	case '«':
+		return '»'
+	case '»':
+		return '«'
 	}
 	return c
 }

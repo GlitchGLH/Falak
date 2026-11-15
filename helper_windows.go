@@ -9,6 +9,8 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows/registry"
+
+	"raha/ui"
 )
 
 // On some systems Windows hides the keyboard and mouse-button state from a
@@ -192,9 +194,8 @@ func (a *App) offerHelper() {
 		"عند السحب من سطح المكتب يُخفي ويندوز عن «فلك» حالة زر Shift وزر الفأرة، ولهذا لا تظهر العجلة هناك.\n\n"+
 			"الحل تشغيل مساعد صغير بصلاحيات المسؤول، وظيفته الوحيدة قراءة حالة الأزرار وإرسالها إلى «فلك». "+
 			"سيطلب ويندوز موافقتك في كل مرة يعمل فيها المساعد.\n\nهل تريد تشغيل المساعد الآن؟")
-	r, _, _ := pMessageBoxW.Call(0, uintptr(unsafe.Pointer(utf16(msg))), uintptr(unsafe.Pointer(utf16(appName))),
-		0x4|0x20|rtl()|MB_TOPMOST)
-	if r == 6 {
+	// Yes is the first button (Enter); No, Esc and the X keep the helper off.
+	if showMessageCard(msg, ui.MsgQuestion, []string{T("Yes", "نعم"), T("No", "لا")}, 1) == 0 {
 		setUseHelper(true)
 		a.launchHelper()
 	}

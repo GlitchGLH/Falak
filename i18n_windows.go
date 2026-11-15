@@ -46,13 +46,6 @@ func applyLanguage() {
 }
 
 // rtl gives message-box flags for right-to-left text in Arabic.
-func rtl() uintptr {
-	if arabic {
-		return MB_RIGHT | MB_RTLREADING
-	}
-	return 0
-}
-
 func idleTip() string {
 	return T("Falak — drag a file and press Shift", "فلك — اسحب ملفًا واضغط Shift")
 }

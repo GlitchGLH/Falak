@@ -175,11 +175,7 @@ func main() {
 
 	pOleInitialize.Call(0)
 	app.hInst, _, _ = pGetModuleHandleW.Call(0)
-	fontDir := filepath.Join(os.Getenv("WINDIR"), "Fonts")
-	app.fonts = ui.LoadFonts(
-		[]string{filepath.Join(fontDir, "segoeuib.ttf"), filepath.Join(fontDir, "arialbd.ttf")},
-		[]string{filepath.Join(fontDir, "seguisb.ttf"), filepath.Join(fontDir, "segoeui.ttf")},
-	)
+	app.fonts = ui.LoadFonts(appFontPaths())
 
 	warmUp(app.fonts) // synchronous: font faces are not safe to share across goroutines
 	soundEnabled = soundOn()
@@ -266,11 +262,6 @@ func main() {
 	}
 	logf("exiting")
 	app.removeTray()
-}
-
-func messageBox(text string, icon uintptr) {
-	pMessageBoxW.Call(0, uintptr(unsafe.Pointer(utf16(text))), uintptr(unsafe.Pointer(utf16(appName))),
-		MB_OK|icon|rtl()|MB_TOPMOST)
 }
 
 // removeOldPrototype drops the startup entry of the earlier "Raha" build.

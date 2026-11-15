@@ -62,7 +62,6 @@ var (
 	pDestroyMenu                   = user32.NewProc("DestroyMenu")
 	pSetForegroundWindow           = user32.NewProc("SetForegroundWindow")
 	pLoadImageW                    = user32.NewProc("LoadImageW")
-	pMessageBoxW                   = user32.NewProc("MessageBoxW")
 	pDragQueryFileW                = shell32.NewProc("DragQueryFileW")
 	pShellNotifyIconW              = shell32.NewProc("Shell_NotifyIconW")
 	pSHChangeNotify                = shell32.NewProc("SHChangeNotify")
@@ -176,12 +175,9 @@ const (
 	NIIF_INFO   = 0x1
 	NIIF_ERROR  = 0x3
 
-	MB_OK         = 0
-	MB_ICONINFO   = 0x40
-	MB_ICONERROR  = 0x10
-	MB_RIGHT      = 0x80000
-	MB_RTLREADING = 0x100000
-	MB_TOPMOST    = 0x40000
+	// the icon of a message card (msgcard_windows.go), named as for MessageBox
+	MB_ICONINFO  = 0x40
+	MB_ICONERROR = 0x10
 
 	SRCCOPY                  = 0x00CC0020
 	CAPTUREBLT               = 0x40000000
