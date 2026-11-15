@@ -448,6 +448,36 @@ updated once, before publishing.
   bytes, SHA-256 `08b62e36a83e3ba4d82136f0352f8c5e68945f24a1b708e7a4adde0e3cf0a9cc`, file
   version 2.0.0.0. Other build folders and `build/SHA256SUMS.txt` untouched (verified).
 
+### Arabic release texts (owner, 2026-11-15)
+- Decisions: (1) the Arabic part of README.md gets the formats table; (2) image alt text in
+  the Arabic part stays ENGLISH, like the existing images ("The Trim Video window in
+  Arabic, light theme" ...); (3) the How to use card should mention image archives to PDF
+  (report only this round, applied with the final build after the owner sends the
+  Arabic); (4) the 1.0.1 build files and `build/phase1` ... `build/phase5` are deleted ONLY
+  after the owner installs and tests 2.0.0.
+- `49d5951` "2.0.0: CLAUDE.md rule, all messages to the owner in Arabic" (permanent rule;
+  the owner's prompts may be in English).
+- `60ff2fa` "2.0.0: Arabic README for 2.0.0": the owner's approved Arabic in the Arabic
+  part, same places and order as the English part: «### الصيغ المدعومة» (heading approved
+  during the round when asked) + the table, the archive paragraph, «### الأدوات» (tool names
+  stay English; between "BLACK BG" and "MERGE PDF" a Latin comma, as in the English line),
+  «### نوافذ الفيديو» + the five windows, Smooth slow motion nested under Speed, the
+  no-overwrite line and 10 `-ar-` screenshots.
+- `0fc92c3` "2.0.0: Arabic release notes for 2.0.0": the approved Arabic in place of the
+  marker, same structure as the English 2.0.0 section (headings «الجديد» / «الإصلاحات»,
+  the five windows as a nested list); its heading reuses the file's existing «بالعربية».
+  No bold was added to the Arabic list items (the approved text has none; the English
+  items are bold).
+- Check used for every Arabic commit: `archeck.py` (scratchpad, not committed): each
+  approved text must equal a line of the file (or sit inside a table / list line) by
+  UTF-8 bytes, every added line with Arabic must consist only of approved texts plus
+  Markdown, and no line with Arabic may be removed. A one-letter change (ه -> ة) in the
+  approved list was caught.
+- How to use card (`helpText()` in `i18n_windows.go`), current "Supported" line ends with
+  "and archives (ZIP, 7Z, RAR, TAR, GZIP)." / «والأرشيفات (ZIP و7Z وRAR وTAR وGZIP).».
+  Proposed English: "... and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds
+  only images converts to PDF)." Waiting for the owner's Arabic.
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -661,16 +691,14 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 ### NEXT (release steps still to do, in order)
 1. Owner's check of `build/phase5/Falak.exe`: the version in the tray menu and in the file
    properties.
-2. The owner's approved Arabic for: the Arabic part of README.md (the same content as the
-   new English part: archives row and paragraph, Tools, Video windows, the new screenshot
-   rows and their alt text) and the Arabic part of the 2.0.0 release notes. Put it in
-   exactly, show every Arabic line. (installer/portable/README.txt needs only the version,
-   done.)
-3. Optional, owner's call: the How to use card's "Supported" line does not mention image
-   archives to PDF (app text in English and Arabic).
+2. DONE (2026-11-15): the Arabic README part and the Arabic 2.0.0 release notes
+   (`60ff2fa`, `0fc92c3`). installer/portable/README.txt needed only the version.
+3. The How to use card's "Supported" line: add image archives to PDF in English and in
+   the owner's Arabic (proposal in "Arabic release texts"), together with the final build.
 4. Final build from a clean tree: `build/Falak.exe`, `FalakSetup-2.0.0.exe`,
-   `Falak-2.0.0-portable.zip`, a new `build/SHA256SUMS.txt` (the 1.0.1 files can go once the
-   owner agrees), `verify-install.ps1`, `audit_paths.py` (now also checks the 2.0.0 zip).
+   `Falak-2.0.0-portable.zip`, a new `build/SHA256SUMS.txt`, `verify-install.ps1`,
+   `audit_paths.py` (now also checks the 2.0.0 zip). Do NOT delete the 1.0.1 files or
+   `build/phase1` ... `phase5` until the owner has installed and tested 2.0.0.
 5. Owner's manual test of the Setup and the portable zip.
 6. VirusTotal scan of the 2.0.0 files (owner); fill RELEASE_NOTES.md checksums and the
    VirusTotal link; README's "VirusTotal scan of the 1.0.0 installer" line -> the 2.0.0
