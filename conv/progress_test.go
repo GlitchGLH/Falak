@@ -16,7 +16,15 @@ import (
 )
 
 // TestProgressMoves checks that the bar keeps moving during long steps:
-// no gap between updates longer than a second, and it ends near the top.
+// no gap between updates longer than 2 s, and it ends near the top.
+//
+// The gaps are wall-clock time, so a busy machine (another heavy program,
+// or the other test packages running at the same time) can hold the whole
+// process for seconds and make one run pause although the code is fine. A
+// real fault (a step that sends no progress) pauses at the same step every
+// time, so a conversion that pauses too long is run again, up to three
+// runs in all, and only fails when every run pauses too long. The limit
+// itself is unchanged.
 func TestProgressMoves(t *testing.T) {
 	FFmpegOverride, _ = exec.LookPath("ffmpeg")
 	dir := t.TempDir()
@@ -43,38 +51,58 @@ func TestProgressMoves(t *testing.T) {
 	zw.Close()
 	zf.Close()
 
+	type result struct {
+		total, maxGap time.Duration
+		n             int
+		top           float64
+		err           error
+	}
+	measure := func(path, id string) result {
+		var mu sync.Mutex
+		var r result
+		start := time.Now()
+		last := start
+		_, r.err = Run(context.Background(), path, id, func(v float64) {
+			mu.Lock()
+			defer mu.Unlock()
+			now := time.Now()
+			if g := now.Sub(last); g > r.maxGap {
+				r.maxGap = g
+			}
+			last, r.top = now, max(r.top, v)
+			r.n++
+		})
+		mu.Lock()
+		defer mu.Unlock()
+		r.total = time.Since(start)
+		if g := time.Since(last); g > r.maxGap {
+			r.maxGap = g
+		}
+		return r
+	}
+	// heavy encoders on 2 cores can delay a tick, so short jobs and
+	// pauses up to 2 s are fine
+	paused := func(r result) bool { return r.total > 1500*time.Millisecond && r.maxGap > 2*time.Second }
 	for _, c := range []struct{ path, id string }{
 		{big, "to:PDF"}, {big, "to:WEBP"}, {big, "to:JPG"}, {big, "to:HEIC"}, {big, "addbg"}, {big, "compress"},
 		{zp, "to:7Z"}, {zp, "x:extract"}, {zp, "to:TAR"},
 	} {
-		var mu sync.Mutex
-		var last time.Time
-		var maxGap time.Duration
-		var top float64
-		n := 0
-		start := time.Now()
-		last = start
-		_, err := Run(context.Background(), c.path, c.id, func(v float64) {
-			mu.Lock()
-			defer mu.Unlock()
-			now := time.Now()
-			if g := now.Sub(last); g > maxGap {
-				maxGap = g
+		var pauses []time.Duration
+		for run := 1; ; run++ {
+			r := measure(c.path, c.id)
+			if r.err != nil && c.id != "compress" {
+				t.Errorf("%s %s: %v", filepath.Base(c.path), c.id, r.err)
+				break
 			}
-			last, top = now, max(top, v)
-			n++
-		})
-		if err != nil && c.id != "compress" {
-			t.Errorf("%s %s: %v", filepath.Base(c.path), c.id, err)
-			continue
-		}
-		total := time.Since(start)
-		if g := time.Since(last); g > maxGap {
-			maxGap = g
-		}
-		t.Logf("%-8s %-10s %6v  updates=%3d  longest pause=%v  reached=%.0f%%", filepath.Base(c.path), c.id, total.Round(time.Millisecond), n, maxGap.Round(time.Millisecond), top*100)
-		if total > 1500*time.Millisecond && maxGap > 2*time.Second { // heavy encoders on 2 cores can delay a tick
-			t.Errorf("%s %s: progress paused for %v", filepath.Base(c.path), c.id, maxGap)
+			t.Logf("%-8s %-10s %6v  updates=%3d  longest pause=%v  reached=%.0f%%  (run %d)", filepath.Base(c.path), c.id, r.total.Round(time.Millisecond), r.n, r.maxGap.Round(time.Millisecond), r.top*100, run)
+			if !paused(r) {
+				break
+			}
+			pauses = append(pauses, r.maxGap.Round(time.Millisecond))
+			if run == 3 {
+				t.Errorf("%s %s: progress paused in every run: %v", filepath.Base(c.path), c.id, pauses)
+				break
+			}
 		}
 	}
 }
