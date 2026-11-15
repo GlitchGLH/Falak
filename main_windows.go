@@ -1004,7 +1004,7 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 		safeRunPrep = func(p string) (string, error) {
 			engineMu.Lock()
 			defer engineMu.Unlock()
-			if conv.NeedsResvg(p) && !conv.HaveResvg() {
+			if conv.NeedsResvg(p, id) && !conv.HaveResvg() {
 				logf("downloading resvg")
 				report(0)
 				if err := conv.EnsureResvg(report); err != nil {

@@ -143,6 +143,10 @@ func archiveItems(path string) []Item {
 			}
 			out = append(out, Item{"to:" + t, t, "", t != "RAR" || RarExe() != ""})
 		}
+		if archivePDFKind(path) {
+			// shown always, enabled only when the archive holds nothing but images
+			out = append(out, Item{"to:PDF", "PDF", "", archiveImages(path).ok})
+		}
 		return out
 	}
 	return nil
@@ -378,6 +382,9 @@ func runArchive(ctx context.Context, path, id string, progress func(float64)) (s
 		return finishTemp(tmp, root)
 	}
 	t := strings.TrimPrefix(id, "to:")
+	if t == "PDF" {
+		return archiveToPDF(ctx, path, progress)
+	}
 	if t == "RAR" {
 		return toRAR(ctx, path, progress)
 	}

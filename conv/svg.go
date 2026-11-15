@@ -35,8 +35,11 @@ func ResvgPath() string {
 
 func HaveResvg() bool { return haveEngine(ResvgOverride, ResvgPath(), resvgPin) }
 
-// NeedsResvg reports whether a file is an SVG drawing.
-func NeedsResvg(path string) bool { return Kind(path) == "SVG" }
+// NeedsResvg reports whether running id on path draws an SVG: an SVG file,
+// or an image-only archive with an SVG in it turned into a PDF.
+func NeedsResvg(path, id string) bool {
+	return Kind(path) == "SVG" || (id == "to:PDF" && archiveHasSVG(path))
+}
 
 // EnsureResvg downloads resvg if it is missing.
 func EnsureResvg(progress func(float64)) error {
