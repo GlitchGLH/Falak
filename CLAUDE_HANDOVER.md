@@ -326,6 +326,77 @@ updated once, before publishing.
   bytes, SHA-256 `6a3c01c2da8854024f8c11846df1d174406bf4f216d55b2f10faf2e1d71e5b7e`.
   Other build folders and `build/SHA256SUMS.txt` untouched (verified).
 
+### Phase 3 test results and decisions (owner, 2026-11-15)
+- EVERYTHING PASSED on `build/phase3`, in Arabic and in English: the Split window (counter
+  forms, points added / dragged / removed with × and Delete, exact parts in
+  "<name> - parts" and " (1)"), the Speed window (silent preview, speeds, -0.5x with natural
+  pitch, " (1)", extreme speeds), the Arabic progress line with the file name on the
+  right, SPLIT and SPEED disabled for two videos.
+- Decisions: the Speed window KEEPS 2× as the default speed. The removal of the two dead
+  Arabic texts «هذا الفيديو أقصر من أن يُقسَم» and «جار التسريع 2×» is accepted.
+
+### New features, phase 4 (2026-11-15; version stays 1.0.1) - the last video windows
+- Approved Arabic (owner, 2026-11-15): "Smooth slow motion" «حركة بطيئة ناعمة», "Takes
+  longer to process" «تستغرق المعالجة وقتًا أطول», "Crop Video" «اقتصاص الفيديو», "Crop"
+  (button) «اقتصاص», "Aspect ratio" «نسبة الأبعاد», "Free" «حرّة», "W" «العرض», "H"
+  «الارتفاع», "Cropping" (progress title) «جار الاقتصاص». The ratio labels stay numbers.
+- `9831159` "1.0.1: smooth slow motion option in the speed window": a switch in the tray
+  menu's style (40×24, accent when on, knob on the left when on in Arabic, like the menu)
+  with its hint under it, on the side reading ends; `SpeedDialog.Smooth` (the user's
+  choice, off at start), `SmoothEnabled` (only at 0.25×, 0.5×, 0.75×: `conv.SmoothApplies`
+  via `Labels.SmoothOK`), `SmoothOn` (what the job uses). At 1.25× and faster the row is
+  drawn dimmed with the switch off and can't be clicked; the choice is kept for when a
+  slow speed is chosen again. Job: `conv.SpeedVideo(..., smooth, ...)`, filter
+  `setpts=PTS/<speed>,minterpolate=fps=<source rate>` (FFmpeg 9.0.2's own minterpolate,
+  defaults: motion-compensated, scene-change detection) instead of `fps=`; same length,
+  frame rate, sound, name. The preview is NOT interpolated: at the preview's own size
+  (896×504, 0.5×) minterpolate made ~17 pictures/s (28 s for 20 s of preview) on this
+  32-thread machine, below the 24 the preview needs (minterpolate has no threading).
+  MEASURED (1-minute 1080p30 H.264 from the owner's 4K sample, 0.5×, this PC): without
+  the option 6 s, with it 588 s (~100×; single-threaded, so slower CPUs take longer).
+  Tests: `TestSmoothSlowMotion` (plain output has a repeated frame, smooth has none),
+  `TestSpeedSmooth`.
+- `40e00b7` "1.0.1: Crop Video window": `ui/cropdlg.go` (`CropDialog`), `conv/cropvideo.go`
+  (`VideoSize`, `CropVideo`, `MinCrop`), host in `videowin_windows.go` (`vkCrop`,
+  `cropStart`; WM_CHAR, the caret timer and WM_ACTIVATE for the fields). Wheel item
+  `{"v:crop", "CROP", "crop", one}` LAST in the video tools (8 tools; the existing crop
+  icon), disabled for several videos, `OpensWindow`. The preview shows ONE frame from the
+  middle of the video (the first is often black). The rectangle is in pixels of the
+  picture AS SHOWN: `VideoSize` reads "WxH" and the display matrix rotation from FFmpeg's
+  banner and swaps the sides for ±90° (FFmpeg autorotates before `-vf crop`, so the crop
+  matches what the preview shows; tested with a rotated file). All numbers even
+  (yuv420p). 8 handles (corners and side middles), outside dimmed, thirds lines, drag
+  inside = move (clamped to the picture). Ratio buttons Free/1:1/16:9/9:16/4:3/3:4: a
+  fixed ratio makes the largest rectangle of that ratio around the current centre; every
+  handle keeps it (corner: the larger of the two pointer sizes; side: the other side
+  follows around its centre). Smallest side 32 px (`MinCrop`; less for tinier videos):
+  enforced silently, so NO "too small" message exists. W / H fields: click = focus with
+  the number selected (first digit replaces it), digits / Arabic-Indic digits /
+  backspace, at most 5 digits, caret blinks; applied (even, clamped, around the centre,
+  the other side following a fixed ratio) when another control is pressed, the window
+  loses focus or on Enter (Enter then crops). Esc / X close, Enter crops. Job: `crop=w:h:x:y`,
+  x264 CRF 16 like Trim, `-c:a copy`; if the copy fails (a sound format the output can't
+  hold, e.g. WMA in MP4) it runs once more with AAC 192k. Output "<name>-cropped" (.mp4,
+  .mov, .mkv kept, else .mp4), " (1)" series. Progress title «جار الاقتصاص». Tests:
+  `TestCropVideo` (exact area by pixels, sound copied, " (1)", odd sizes made even),
+  `TestVideoSizeRotated`, `TestCropDrag`, `TestCropFields`, `TestCropHitTest`,
+  `TestCropNumbersDontFlip` (Arabic ratio labels, W/H numbers and speed values each look
+  most like the same label in English: "16:9" never "9:16"; a deliberately swapped label
+  was caught), `TestWindowToolsOneVideo` (now with v:crop).
+- Gate note: `TestProgressMoves` (conv, timing: fails if a progress update pauses over 2 s)
+  failed TWICE this round, each time in a slow full run (conv ~400 s instead of ~105 s;
+  machine busy): image to PDF paused 3.4 s before the crop commit, 7Z 2.1 s before the
+  handover commit. Never in a normal-speed run: `67370cf` passed 2 of 2, `40e00b7` 2 of 2
+  (separate worktree), and the gates passed before each commit. If it fails, rerun and
+  compare the conv time before suspecting the code.
+- Shots (local, not committed; `shots_windows_test.go` `TestShotsPhase4`):
+  `C:\Users\Glitch\Desktop\Falak phase 4 shots` (Speed with the switch on / off /
+  disabled, Crop Free / 16:9 / 9:16 / typing in W, the Cropping progress window, the
+  tools wheel with CROP; Arabic and English, light and dark).
+- Test build: `build/phase4/Falak.exe` from `40e00b7` (`vcs.modified=false`), 38,981,120
+  bytes, SHA-256 `4d1498feabaca889e2acdc94c2d118245d58434af89f4a2177bb236fe61f46dc`.
+  Other build folders and `build/SHA256SUMS.txt` untouched (verified, `sha256sum -c` OK).
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -529,9 +600,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phases 1, 2 and 3 done (see above); the owner tested `build/phase2d`
-  (everything passed); waiting for the test of `build/phase3/Falak.exe` (Split and Speed
-  windows, the Arabic progress line). `build/` still holds the 1.0.1
+- New features, phases 1-4 done (see above); the owner tested `build/phase3` (everything
+  passed); waiting for the test of `build/phase4/Falak.exe` (Smooth slow motion, Crop
+  Video window). All five video windows are built. `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -544,11 +615,11 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase3/Falak.exe` (phase 3: Split, Speed, the Arabic
-   progress line "45% · name").
+5. Owner's manual test of `build/phase4/Falak.exe` (phase 4: Smooth slow motion, Crop).
 6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
    folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
-7. Next video window: Crop; its strings need the owner's Arabic first.
+7. The video windows are complete (Trim, Snapshots, Split, Speed, Crop). README needs them
+   (item 6).
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -613,6 +684,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
+- Never `taskkill /IM ffmpeg.exe` (all FFmpeg processes) to clear a test run: it would also
+  kill a conversion the owner's own Falak is running. Stop only the test's own process.
+- `bc` is not in Git Bash here; time with `date +%s` arithmetic.
 - Judging Arabic/Latin order by LOOKING at a rendered PNG is unreliable for the model (it
   "reads" the line in logical order). Check order with pixels: crop each end, or match a
   render of the Latin part alone against the line (see `TestCardFileNameFirstArabic`).
@@ -769,7 +843,7 @@ rOut 147, rIn 60.5, rHole 52.3; render pipeline; hover springs; `segmentPath`;
 colors dark {40,40,44} / light {255,255,255}) · `panel.go` (progress panel, solid `glassBase`) ·
 `compdialog.go` (Compress dialog model: `TargetMB`, `TargetTooBig`, `OriginalBytes`,
 `StartActive`) · `helpcard.go` · `msgcard.go` (message card) · `splitdlg.go` (Split Video) · `speeddlg.go` (Change
-Video Speed) · `popanim.go` (the wheel's open/close for
+Video Speed, Smooth slow motion switch) · `cropdlg.go` (Crop Video) · `popanim.go` (the wheel's open/close for
 popups) · `icons.go` (supersampled line icons) · `fonts.go` (Inter/Amiri)
 · `blur.go` (FrostBackground, GaussianBlur, box blurs) · `textblock.go` ·
 tests: `lift_test.go`, `seam_test.go` (hover-seam regression), `menu_test.go`, `visual_test.go`,
