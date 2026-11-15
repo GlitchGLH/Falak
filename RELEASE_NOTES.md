@@ -50,7 +50,7 @@ e83797282cda12db87117f19e26b561af3591a471a79b94557aa1cbcfe397a4c  Falak.exe
 1701561cd89de5b5fc2aa87015d3bafbdd3f1147cd700c152afc1f80beaad6d2  Falak-2.0.0-portable.zip
 ```
 
-VirusTotal scan of FalakSetup-2.0.0.exe: <VirusTotal link — added after the scan>
+VirusTotal scan of FalakSetup-2.0.0.exe: https://www.virustotal.com/gui/file/9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36
 
 ## بالعربية
 

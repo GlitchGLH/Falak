@@ -142,7 +142,7 @@ the name.
 
 A portable version that needs no installation is attached to the release too.
 
-[VirusTotal scan of the 2.0.0 installer](VIRUSTOTAL-LINK-AFTER-SCAN)
+[VirusTotal scan of the 2.0.0 installer](https://www.virustotal.com/gui/file/9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36)
 
 ## Key-reading helper (optional)
 
@@ -303,7 +303,7 @@ By UncleGlitch (GitHub: @GlitchGLH)
 
 توجد أيضًا نسخة محمولة لا تحتاج تثبيتًا مرفقة بالإصدار.
 
-[نتيجة فحص VirusTotal لمثبّت الإصدار 2.0.0](VIRUSTOTAL-LINK-AFTER-SCAN)
+[نتيجة فحص VirusTotal لمثبّت الإصدار 2.0.0](https://www.virustotal.com/gui/file/9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36)
 
 ### مساعد قراءة الأزرار (اختياري)
 
