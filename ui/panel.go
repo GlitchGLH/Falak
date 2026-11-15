@@ -265,14 +265,13 @@ func (p *Panel) Render(now time.Time) *image.RGBA {
 			pct = " · " + itoa(int(math.Floor(p.shown*100+0.0001))) + "%"
 		}
 		pw, _ := dc.MeasureString(pct)
-		name := fitText(dc, p.file, barW*s-pw)
-		name = Visual(name)
+		line := subLine(fitText(dc, p.file, barW*s-pw), pct, p.RTL)
 		x := m + subX*s
 		if p.RTL { // ends where the bar ends
-			lw, _ := dc.MeasureString(name + pct)
+			lw, _ := dc.MeasureString(line)
 			x = m + (barX+barW)*s - lw
 		}
-		dc.DrawString(name+pct, x, m+subY*s+capHeightOf(f)/2)
+		dc.DrawString(line, x, m+subY*s+capHeightOf(f)/2)
 	}
 
 	// bar
@@ -306,6 +305,16 @@ func (p *Panel) Render(now time.Time) *image.RGBA {
 	}
 	drawLayer(p.frame, p.work, float64(p.W)/2, float64(p.H)/2, sc, 0, a, true)
 	return p.frame
+}
+
+// subLine is the line under the title, ready for drawing left to right:
+// the file name, then " · 45%". In Arabic it reads from the right, so the
+// name comes first on the right and the percent follows on its left.
+func subLine(name, pct string, rtl bool) string {
+	if !rtl || pct == "" {
+		return Visual(name) + pct
+	}
+	return strings.TrimPrefix(pct, " · ") + " · " + Visual(name)
 }
 
 func itoa(n int) string {
