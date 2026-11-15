@@ -478,7 +478,55 @@ updated once, before publishing.
   Proposed English: "... and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds
   only images converts to PDF)." Waiting for the owner's Arabic.
 
-### FINAL build 2.0.0 (2026-11-15, from `88ac8d8`; not published yet)
+### FINAL build 2.0.0, rebuilt (2026-11-15, from `9c78931`; not published yet) - CURRENT
+- Owner's decisions (not yet tested the earlier final files): fix the faint marks in the
+  Arabic How to use card before the release; add a VirusTotal line to the Arabic README.
+- `0e14021` "2.0.0: invisible direction marks are never drawn": `ui/fonts.go` wraps every
+  face from `Fonts.Face` in `invisibleFace`: the invisible format characters
+  (`invisible(c)`: U+00AD, U+061C ALM, U+180E, U+200B-U+200F (ZWSP, ZWNJ, ZWJ, LRM, RLM),
+  U+202A-U+202E, U+2060-U+2064, U+2066-U+206F, U+FEFF) have no glyph, no advance and no
+  kerning, so nothing drawn or measured with Falak's fonts shows them (Segoe UI draws a
+  mark for them). `ui.Visual` treats RLM (and ALM, already in the Arabic range) as strong
+  RTL and LRM as strong LTR, then drops them (`dropInvisible`; also for text without RTL).
+  No string changed. Only the Arabic card's engines line contained them (4 RLM in
+  `helpText()`); it was drawn "(FFmpeg <RLM>(GPL" with a mark (brackets misplaced: RLM was a
+  neutral); now "FFmpeg (GPL)، وPDFium (BSD)، ..." as intended. Note: the card wraps
+  between "(Apache" and "2.0)", an ordinary word wrap. Pixel check (local `TestShotsAll`
+  in `shots_windows_test.go` + scratchpad `pixcmp`): 68 renders (wheels, tray menu,
+  Compress, progress, How to use top and end, info/error/question cards, the five video
+  windows and their progress titles; AR/EN, light/dark): 66 identical, only
+  `how-to-use-end-ar-light/dark` differ, in the engines line band. README images:
+  identical, nothing to commit. Tests `TestInvisibleNeverDrawn` (fails without the
+  wrapper: ALM, LRM, RLM drew marks and took width), `TestVisualDirectionMarks`.
+- `9c78931` "2.0.0: Arabic VirusTotal line in README": the owner's «نتيجة فحص VirusTotal
+  لمثبّت الإصدار 2.0.0» after the portable sentence in the Arabic part; the English line
+  (it still named the 1.0.0 installer with the 1.0.0 scan link) now reads "VirusTotal scan
+  of the 2.0.0 installer"; both link to the placeholder `VIRUSTOTAL-LINK-AFTER-SCAN`
+  (no angle brackets: GitHub can hide `<...>` as HTML).
+- The earlier final 2.0.0 files (from `88ac8d8`, never published or tested) were replaced.
+  `build/1.0.1/` and `build/phase1` ... `phase5` untouched (hashes compared).
+- Built from a clean tree at `9c78931` after all gates passed, as documented (shots file
+  moved out; makensis 0 warnings):
+
+  | File | Bytes | SHA-256 |
+  |---|---|---|
+  | `build/Falak.exe` | 38,986,240 | `e83797282cda12db87117f19e26b561af3591a471a79b94557aa1cbcfe397a4c` |
+  | `build/FalakSetup-2.0.0.exe` | 12,695,728 | `9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36` |
+  | `build/Falak-2.0.0-portable.zip` | 17,049,405 | `1701561cd89de5b5fc2aa87015d3bafbdd3f1147cd700c152afc1f80beaad6d2` |
+
+  Verified: `vcs.revision=9c78931f627dc6258737d6cb1620638b15b2db42`, `vcs.modified=false`,
+  tags `wasm2go,nodynamic`; FileVersion / ProductVersion 2.0.0.0 in Falak.exe and the
+  Setup; the zip holds exactly Falak.exe, README.txt, THIRD_PARTY_LICENSES.txt; Falak.exe
+  in the zip and in the Setup payload (7-Zip) byte-identical to `build/Falak.exe`, the
+  texts identical to the repo's; no shots strings; `sha256sum -c` OK.
+- `1d32856` "2.0.0: release notes checksums for the rebuilt final files" (docs only, no
+  rebuild after it).
+- Found, NOT changed (owner's call): `docs/tray-menu-*` still show the 1.0.0 subtitle
+  "1.0 · By UncleGlitch" (Falak shows "2.0.0 · ..."), and `docs/progress-ar-*` show the
+  progress line from before the phase 3 fix (percent first). Re-rendering them is a
+  docs-only change.
+
+### FINAL build 2.0.0 (2026-11-15, from `88ac8d8`) - SUPERSEDED by the rebuild above (never published or tested)
 - `8849565` "2.0.0: Arabic release notes and README formatting": owner's decisions: bold in
   the Arabic 2.0.0 notes on the same parts as the English section (item names and
   «حركة بطيئة ناعمة»; Markdown only, letters checked unchanged), and the Arabic comma «،»
@@ -717,25 +765,24 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- **2.0.0 final build done** (see "FINAL build 2.0.0"): `build/Falak.exe`,
+- **2.0.0 final files rebuilt** (see "FINAL build 2.0.0, rebuilt"): `build/Falak.exe`,
   `build/FalakSetup-2.0.0.exe`, `build/Falak-2.0.0-portable.zip`, `build/SHA256SUMS.txt`
-  from `88ac8d8`. README (EN + AR), the How to use card and the 2.0.0 release notes (EN + AR,
-  with checksums) are final except the VirusTotal link. The 1.0.1 files are in
-  `build/1.0.1/` (never published); `build/phase1` ... `phase5` still there.
+  from `9c78931`. Docs final except the VirusTotal links (README EN + AR placeholder
+  `VIRUSTOTAL-LINK-AFTER-SCAN`, RELEASE_NOTES `<VirusTotal link — added after the scan>`).
+  The 1.0.1 files are in `build/1.0.1/`; `build/phase1` ... `phase5` still there.
 
 ### NEXT (release steps still to do, in order)
-1. Owner's manual test of the final files: upgrade from `build/1.0.1/FalakSetup-1.0.1.exe`
-   to `build/FalakSetup-2.0.0.exe` (version in the tray menu, settings kept, main features),
-   the portable zip in a new folder, uninstall keeping and deleting settings.
-2. Owner's VirusTotal scan of the three files (by hand). Then: the FalakSetup-2.0.0.exe
-   scan link in RELEASE_NOTES.md (replace the placeholder) and README's VirusTotal line
-   (English "VirusTotal scan of the 1.0.0 installer" -> 2.0.0; the Arabic part has no
-   such line: adding one needs the owner's Arabic). Docs only, no rebuild: the hashes in
-   the notes must stay those of the tested files.
-3. After the owner's approval only: delete `build/1.0.1/` and `build/phase1` ...
-   `build/phase5`.
-4. Only on the owner's explicit approval: tag `v2.0.0` on the commit that holds the final
-   docs (the exe was built from `88ac8d8`; later commits are docs only), push `main` (never
+1. Owner's manual test of the rebuilt final files: upgrade from
+   `build/1.0.1/FalakSetup-1.0.1.exe` to `build/FalakSetup-2.0.0.exe` (version in the tray
+   menu, settings kept, main features, the Arabic How to use card's engines line without
+   marks), the portable zip in a new folder, uninstall keeping and deleting settings.
+2. Owner's call: re-render the stale README images `docs/tray-menu-*` (1.0 subtitle) and
+   `docs/progress-ar-*` (old order) - docs only, no rebuild.
+3. Owner's VirusTotal scan of the three files (by hand). Then, docs only, no rebuild: the
+   FalakSetup-2.0.0.exe scan link in README (EN + AR placeholders) and RELEASE_NOTES.md.
+4. After the owner's approval only: delete `build/1.0.1/` and `build/phase1` ... `phase5`.
+5. Only on the owner's explicit approval: tag `v2.0.0` on the commit that holds the final
+   docs (the exe was built from `9c78931`; later commits are docs only), push `main` (never
    force), GitHub release "Falak 2.0.0" with `FalakSetup-2.0.0.exe`,
    `Falak-2.0.0-portable.zip`, `SHA256SUMS.txt` and the 2.0.0 notes; download the assets
    back and `sha256sum -c`. The v1.0.0 release and its assets stay untouched.
@@ -805,6 +852,11 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
+- The Write tool turns `\uXXXX` escapes for invisible characters (BOM, RLM ...) into the
+  real characters; Go rejects a literal BOM. Write such test strings, then run a script
+  that puts the escapes back (`\u200f`), and check the bytes.
+- README screenshots go stale silently (version subtitle, fixed layouts): compare `docs/`
+  with a fresh render (pixcmp) before a release.
 - README PNGs of a smooth gradient video are 2-3× bigger than of flat colours (and x264
   noise makes it worse): use flat, lossless sample frames for screenshots.
 - Never `taskkill /IM ffmpeg.exe` (all FFmpeg processes) to clear a test run: it would also
