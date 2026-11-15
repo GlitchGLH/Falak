@@ -399,6 +399,55 @@ updated once, before publishing.
   bytes, SHA-256 `4d1498feabaca889e2acdc94c2d118245d58434af89f4a2177bb236fe61f46dc`.
   Other build folders and `build/SHA256SUMS.txt` untouched (verified, `sha256sum -c` OK).
 
+### Phase 4 test results and decisions (owner, 2026-11-15)
+- EVERYTHING PASSED on `build/phase4`, in Arabic and in English: the Smooth slow motion
+  switch (disabled above 1×, remembered, smooth output, cancel leaves nothing behind), the
+  Crop window (handles, move, ratios not flipped, W/H fields with odd / too big / too small
+  values and Arabic digits, `-cropped` and " (1)"), CROP disabled for two videos.
+- Decisions: CROP STAYS LAST in the video tools wheel; ONE preview frame in the Crop window
+  is enough (no thumbnail strip).
+- All planned features are done. Next: the 2.0.0 release.
+
+### Release preparation 2.0.0 (2026-11-15)
+- Owner's decision: the next release is **2.0.0** (1.0.1 was never published). Commit
+  messages start with "2.0.0: " (CLAUDE.md).
+- `d669561` "2.0.0: bump version": the same 12 files as the 1.0.1 bump `961a735`
+  (`appVersionNum` "2.0.0", `.syso` VERSIONINFO 2.0.0.0 patched in place: 8 bytes, the
+  FILEVERSION / PRODUCTVERSION DWORD pairs 0x00020000 / 0 and the two "1.0.1.0" strings;
+  `res/raha.rc`, the installer, `make_portable.py`, `audit_paths.py` (checks
+  `build/Falak-2.0.0-portable.zip` only when it exists), `verify-install.ps1`,
+  THIRD_PARTY_LICENSES.txt, HANDOVER.md, README.md and README.txt (the owner approved
+  changing ONLY the number in two Arabic lines: «1. نزّل `FalakSetup-2.0.0.exe` من صفحة
+  الإصدارات.» and «فلك 2.0.0 - نسخة محمولة»), CLAUDE.md, CLAUDE_HANDOVER.md "Version").
+  Windows reads FileVersion / ProductVersion 2.0.0.0 from `build/phase5/Falak.exe`.
+- `b78b5e8` "2.0.0: README screenshots of the new video windows": 20 new PNGs in `docs/`
+  (`trim-`, `snapshots-`, `split-`, `speed-` (Smooth slow motion on, 0.5×), `crop-` (16:9),
+  each `-en-light/-en-dark/-ar-light/-ar-dark`) and `tools-wheel-light/dark` again (now with
+  TRIM, SPLIT, SPEED, SNAPSHOT, CROP). Renderer: `shots_windows_test.go` `TestShotsREADME`
+  (local, not committed; writes straight into `docs/`, PNG BestCompression). The sample
+  video is FFmpeg `gradients` (spiral) posterized with `lutrgb` into flat bands, encoded
+  LOSSLESS (`libx264rgb -qp 0`): smooth gradients through x264 made 300-440 KB PNGs (10.2 MB
+  in all); flat lossless bands about 150-210 KB. `docs/` total 7.06 MB (was 3.3 MB).
+- `dcc5ac8` "2.0.0: English README and release notes for 2.0.0": README English part
+  (archives row "a ZIP, RAR or 7Z that holds only images converts to PDF" + its paragraph,
+  "## Tools" (tools per kind, compressing several files, message windows), "## Video
+  windows" (the five windows, Smooth slow motion, no-overwrite rule, 10 screenshots with
+  English alt text)). The Arabic part is UNCHANGED (only the version number): it waits for
+  the owner's text for the same content. RELEASE_NOTES.md: "# Falak 2.0.0 — release notes"
+  in English on top (New / Fixed since 1.0.0, the 1.0.1 full-screen fix included),
+  checksums and VirusTotal link as `<... added after ...>` placeholders, an HTML comment
+  where the Arabic part goes; the 1.0.0 notes below unchanged.
+- `0f61475` "2.0.0: progress test no longer fails on a busy machine": `TestProgressMoves`
+  runs a conversion again when its longest pause is over 2 s (total over 1.5 s), up to
+  three runs, and fails only when every run pauses (`progress paused in every run: [...]`).
+  The limit is unchanged. Why not progress steps: the one-step engines' bar follows the
+  clock (`estimate`), so a held process jumps in value just the same. Verified both ways:
+  ticker slowed to 3 s on purpose -> WEBP and compress failed 3 of 3 runs; four 1080p x264
+  encodes loading the machine -> the real code passed.
+- Test build: `build/phase5/Falak.exe` from `0f61475` (`vcs.modified=false`), 38,981,120
+  bytes, SHA-256 `08b62e36a83e3ba4d82136f0352f8c5e68945f24a1b708e7a4adde0e3cf0a9cc`, file
+  version 2.0.0.0. Other build folders and `build/SHA256SUMS.txt` untouched (verified).
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -602,26 +651,33 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phases 1-4 done (see above); the owner tested `build/phase3` (everything
-  passed); waiting for the test of `build/phase4/Falak.exe` (Smooth slow motion, Crop
-  Video window). All five video windows are built. `build/` still holds the 1.0.1
-  build from `961a735` (not published; it predates the new features, so a release with them
-  needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
-  (2026-11-15). GitHub release postponed until new features are added (owner's decision).
+- Release preparation for **2.0.0** (see "Release preparation 2.0.0"). All features are done
+  and tested by the owner (phase 4 passed). Version, screenshots, the English README and
+  the English 2.0.0 release notes are committed; `build/phase5/Falak.exe` (2.0.0.0) waits
+  for the owner's check. `build/` still holds the unpublished 1.0.1 files (`Falak.exe`,
+  `FalakSetup-1.0.1.exe`, `Falak-1.0.1-portable.zip`, `SHA256SUMS.txt`); 1.0.1 will never be
+  published. The user who had the blocked wheel confirmed 1.0.1 fixed it (2026-11-15).
 
-### NEXT
-1. Owner's manual test of 1.0.1.
-2. DONE (2026-11-15): 1.0.1 was sent to the user who had the blocked wheel; he confirmed it
-   fixed the problem (the wheel now opens). His new `falak.log` was not reviewed in a session.
-3. VirusTotal scan of the 1.0.1 files.
-4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
-   publishing happens later, only on the owner's decision. Before that release: update the
-   README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase4/Falak.exe` (phase 4: Smooth slow motion, Crop).
-6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
-   folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
-7. The video windows are complete (Trim, Snapshots, Split, Speed, Crop). README needs them
-   (item 6).
+### NEXT (release steps still to do, in order)
+1. Owner's check of `build/phase5/Falak.exe`: the version in the tray menu and in the file
+   properties.
+2. The owner's approved Arabic for: the Arabic part of README.md (the same content as the
+   new English part: archives row and paragraph, Tools, Video windows, the new screenshot
+   rows and their alt text) and the Arabic part of the 2.0.0 release notes. Put it in
+   exactly, show every Arabic line. (installer/portable/README.txt needs only the version,
+   done.)
+3. Optional, owner's call: the How to use card's "Supported" line does not mention image
+   archives to PDF (app text in English and Arabic).
+4. Final build from a clean tree: `build/Falak.exe`, `FalakSetup-2.0.0.exe`,
+   `Falak-2.0.0-portable.zip`, a new `build/SHA256SUMS.txt` (the 1.0.1 files can go once the
+   owner agrees), `verify-install.ps1`, `audit_paths.py` (now also checks the 2.0.0 zip).
+5. Owner's manual test of the Setup and the portable zip.
+6. VirusTotal scan of the 2.0.0 files (owner); fill RELEASE_NOTES.md checksums and the
+   VirusTotal link; README's "VirusTotal scan of the 1.0.0 installer" line -> the 2.0.0
+   scan (both languages: the Arabic part has no such line today).
+7. Only on the owner's explicit approval: tag `v2.0.0`, push `main`, GitHub release
+   "Falak 2.0.0" with `FalakSetup-2.0.0.exe`, `Falak-2.0.0-portable.zip`,
+   `SHA256SUMS.txt`; download back and `sha256sum -c`. The v1.0.0 release stays untouched.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
@@ -686,6 +742,8 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
+- README PNGs of a smooth gradient video are 2-3× bigger than of flat colours (and x264
+  noise makes it worse): use flat, lossless sample frames for screenshots.
 - Never `taskkill /IM ffmpeg.exe` (all FFmpeg processes) to clear a test run: it would also
   kill a conversion the owner's own Falak is running. Stop only the test's own process.
 - `bc` is not in Git Bash here; time with `date +%s` arithmetic.
