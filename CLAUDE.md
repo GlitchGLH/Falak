@@ -5,6 +5,11 @@ commands, decision history and current state.
 
 ## Permanent rules
 
+- **Language of messages**: every message to the owner is written in
+  Arabic: progress notes while working, questions and final reports alike.
+  The owner's prompts may be in English; the reply is still in Arabic.
+  (Code, comments, commit messages and English docs stay in English; Arabic
+  product text still needs the owner's approved wording, see below.)
 - **Never touch the sound code**: `sound_windows.go`, `res/*.wav` and every
   call site of `playHover` / `playAppear` / `playDrop` / `soundKeepAlive` /
   `soundOn`. No fixes, no "improvements". **Never add, remove or move a sound
