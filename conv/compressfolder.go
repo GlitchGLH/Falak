@@ -11,7 +11,8 @@ import (
 
 // Compressing two or more files together puts the compressed copies in a
 // new folder, "Compressed 2026-11-15 05-30", beside the originals; files
-// from different folders get one such folder in each of their folders.
+// from different folders get one such folder in each of their folders. In
+// the folder each copy keeps its original name.
 // Compressing one file is unchanged (the copy goes beside it).
 
 // IsCompress reports whether id is the Compress tool of any file kind.
@@ -74,10 +75,13 @@ func WithOutDir(ctx context.Context, dir string) context.Context {
 	return context.WithValue(ctx, outDirKey{}, dir)
 }
 
-// outPath is uniquePath, inside the folder set by WithOutDir when there is one.
+// outPath is uniquePath, inside the folder set by WithOutDir when there is
+// one. In that folder the copy keeps the original name (photo.jpg, not
+// photo-compressed.jpg; only the extension follows the output format, e.g.
+// clip.mov -> clip.mp4), with the " (n)" series if the name is taken.
 func outPath(ctx context.Context, src, suffix, ext string) string {
 	if d, _ := ctx.Value(outDirKey{}).(string); d != "" {
-		base := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + suffix
+		base := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src))
 		return nameSeries{d, base, ext}.pick()
 	}
 	return uniquePath(src, suffix, ext)

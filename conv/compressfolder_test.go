@@ -81,7 +81,7 @@ func writeTestJPEG(t *testing.T, p string) {
 }
 
 // TestCompressIntoFolder: with WithOutDir the copy goes into the folder
-// (same name as today); without it, beside the original as before.
+// under the original name; without it, beside the original as before.
 func TestCompressIntoFolder(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "photo.jpg")
@@ -101,7 +101,7 @@ func TestCompressIntoFolder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := filepath.Join(folder, "photo-compressed.jpg"); out != want {
+	if want := filepath.Join(folder, "photo.jpg"); out != want {
 		t.Fatalf("in folder: got %s, want %s", out, want)
 	}
 	// a second run into the same folder never replaces the first copy
@@ -109,10 +109,46 @@ func TestCompressIntoFolder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := filepath.Join(folder, "photo-compressed (1).jpg"); out2 != want {
+	if want := filepath.Join(folder, "photo (1).jpg"); out2 != want {
 		t.Fatalf("second copy: got %s, want %s", out2, want)
 	}
 	if _, err := os.Stat(filepath.Join(folder, tempDirName)); err == nil {
 		t.Error("a temp folder was left in the compress folder")
+	}
+}
+
+// TestCompressFolderSameName: two originals that end with the same name in
+// the folder (photo.jpg and photo.bmp, both compressed to JPG) never
+// replace each other.
+func TestCompressFolderSameName(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "photo.jpg")
+	writeTestJPEG(t, a)
+	img, err := Decode(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := filepath.Join(dir, "photo.bmp")
+	f, err := os.Create(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Encode(f, img, "BMP", 0); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	folder := filepath.Join(dir, "Compressed 2026-11-15 05-30")
+	os.Mkdir(folder, 0o755)
+	ctx := WithOutDir(context.Background(), folder)
+	o1, err := Run(ctx, a, "compress", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o2, err := Run(ctx, b, "compress", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o1 != filepath.Join(folder, "photo.jpg") || o2 != filepath.Join(folder, "photo (1).jpg") {
+		t.Fatalf("got %s and %s", o1, o2)
 	}
 }
