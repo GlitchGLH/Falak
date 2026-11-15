@@ -179,6 +179,53 @@ updated once, before publishing.
   2 and these decisions. `build/Falak.exe`, `build/phase1`, `build/phase2` and
   `build/SHA256SUMS.txt` untouched (verified).
 
+### Phase 2 test results and fixes (owner's test of `build/phase2b`, 2026-11-15)
+- PASSED: archive to PDF (ZIP, 7Z made by Falak, page order 1, 2, 10, " (n)" names, PDF
+  disabled for a mixed ZIP), Trim window, Snapshots window (names, same frame as the
+  preview), TRIM/SNAPSHOT disabled for two videos, "Preparing the video…" without FFmpeg,
+  Arabic Trim and Snapshots windows (texts, mirroring, time display).
+- FAILED, fixed in `701e0af` "1.0.1: compressing several files really uses the dated
+  folder": 2 JPGs + a MOV + a PDF dropped on COMPRESS gave no folder, only the first file's
+  kind was compressed (old `-compressed` name), the JPGs got nothing and no error showed.
+  Cause (falak.log: "dropped 4 file(s) on p:compress", then "skipped ...: p:compress does
+  not apply to it" for the other three): Compress has one ID per kind (`compress`,
+  `v:compress`, `a:compress`, `p:compress`) and the wheel shows the FIRST file's; the drop
+  kept only files whose own items had that exact ID (`applicable`), so one file was left,
+  `len(paths) >= 2` was false and no folder was made; skipped files were only logged.
+  Fix: `planDrop` gives every file its own kind's Compress (`conv.CompressIDFor`); a file
+  that can't be compressed is listed as "<name>: This option doesn't apply to the selected
+  files" in the failure window; the job body is `runDropFiles` (dated folder when 2+ files).
+  Gap in the tests: phase 1 tests called `conv.Run` with `WithOutDir` on files of ONE kind
+  and never went through the drop path (`applicable` + the wheel's one ID). New test
+  `TestDropCompressMixed` (drop_windows_test.go) runs the real case through
+  `planDrop`/`runDropFiles`; it failed on the old logic with exactly the owner's result.
+- ISSUE, fixed in `4d02f68` "1.0.1: error messages show the real cause, not FFmpeg's
+  progress line": a snapshot into a folder in C:\Program Files showed "Conversion failed:
+  frame= 1 fps=0.0 ... speed=1.66x". Cause: `ffmpegError` took FFmpeg's LAST stderr line,
+  the statistics line; the real reason was that `.falak-tmp` could not be created (no
+  permission), so FFmpeg only said "No such file or directory". Fix: `checkTempDir` before
+  every FFmpeg run returns "<folder>: <Windows' reason>" (e.g. "Access is denied."), and
+  `ffmpegError` now picks the FIRST line stating an error (skipping statistics, summaries,
+  image2's pattern warning and the follow-up lines). All FFmpeg paths share it (convert,
+  compress, two-pass, GIF palette, HEIC). The snapshot window shows `conv.Cause(err)`
+  (without "Conversion failed:"); the job failure window keeps "Conversion failed: <cause>".
+  Tests: `TestFFmpegErrorLine` (the owner's stderr), `TestSnapshotUnwritableFolder`.
+- `bc9f65e` "1.0.1: popups open and close as smoothly as the wheel": `ui/popanim.go`
+  (`PopOpen`, `PopOpenDone`, `PopClose`, `PopFrame`) holds the wheel's numbers (open from
+  40%, exp 35 ms, alpha 50% -> 100% by the third frame; close: fade + shrink 8%, ease-out,
+  160 ms); the wheel itself is unchanged. `popOpenLayered` / `animateLayeredClose`
+  (menu_windows.go) apply them to the tray menu (its old slide/fade is gone), How to use,
+  Compress dialog, Trim and Snapshots windows; the progress window already popped in on
+  the same curve (`ui/panel.go` now calls `PopOpen`) and now also closes with it on X, on
+  finishing and when "Done" ends (`closePanelAnimated`). No focus change: each window is
+  shown exactly as before. `ui/zoom.go` (ZoomFrame) removed. Not animated: Windows message
+  boxes (`messageBox`: errors, helper hint, "already running", drag-and-drop error) and
+  the progress window when a new drag sends its job to the background (the wheel must
+  appear at once); both waiting for the owner's decision.
+- Test build: `build/phase2c/Falak.exe` from `bc9f65e` (`vcs.modified=false`), 38,836,736
+  bytes, SHA-256 `30c05f5d5a3bba0da06be4cff34ab61457f308490322e7af15a95adce6a3e7ac`.
+  Other build folders and `build/SHA256SUMS.txt` untouched (verified).
+
 ### 1.0.1 build (2026-11-09, from `961a735`; not published)
 Falak 1.0.1 = 1.0.0 plus the full-screen fix:
 - `ad92427` "1.0.0: log full-screen block details": when the wheel is blocked, the log
@@ -382,8 +429,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- New features, phases 1 and 2 and the phase 2 decisions done (see above); waiting for the
-  owner's manual test of `build/phase2b/Falak.exe` (it contains everything). `build/` still holds the 1.0.1
+- New features, phases 1 and 2 and the phase 2 decisions done (see above); the owner tested
+  `build/phase2b` (results above); waiting for the test of `build/phase2c/Falak.exe` (the
+  three fixes). `build/` still holds the 1.0.1
   build from `961a735` (not published; it predates the new features, so a release with them
   needs a new build). The user who had the blocked wheel confirmed 1.0.1 fixes it
   (2026-11-15). GitHub release postponed until new features are added (owner's decision).
@@ -396,9 +444,10 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
 4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
    publishing happens later, only on the owner's decision. Before that release: update the
    README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
-5. Owner's manual test of `build/phase2b/Falak.exe`: compress folder (original names),
-   archive PDF, Trim Video, Video Snapshots, TRIM/SNAPSHOT disabled for several videos,
-   the snapshot-save error.
+5. Owner's manual test of `build/phase2c/Falak.exe`: mixed multi-file compress, the
+   snapshot error's reason line, the popup animations. Owner's decision pending: replace
+   the Windows message boxes with an animated Falak card (needs no new text if it reuses
+   "OK"), and whether the progress window sent to the background by a new drag animates.
 6. README, all at once before publishing (owner's decision): archive -> PDF, the compress
    folder, TRIM, the Snapshots window; its Arabic part needs the owner's text.
 7. Next video windows: Split (replaces SPLIT 1/2) + Speed (replaces SPEED 2x), then Crop;
@@ -467,6 +516,9 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   The file is local and not committed (owner's decision); the PNGs it made are in `docs/`.
 
 ### Mistakes and dead ends (do not repeat)
+- Testing a drop feature only through `conv.Run` misses the drop path: the wheel offers
+  the FIRST file's item IDs and `applicable`/`planDrop` filter the selection. Test mixed
+  selections through `planDrop` + `runDropFiles` (see `TestDropCompressMixed`).
 - Python edits through a bash heredoc mangled escapes: `\n\n` became real line breaks inside a
   Go string, and `\t` / `\f` in Windows paths became a tab and a form feed. Write the script
   to a file with raw strings (or edit with the Edit tool) and re-read the result.
