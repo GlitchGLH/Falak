@@ -112,7 +112,7 @@ func ToolItemsFor(paths []string) []Item {
 	path := paths[0]
 	switch Category(path) {
 	case "video":
-		return videoTools(path)
+		return videoTools(paths)
 	case "audio":
 		return audioTools(path)
 	case "archive":

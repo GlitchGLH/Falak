@@ -972,8 +972,8 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 		a.showCompress(paths[0], id, label, cx, cy, scale)
 		return DROPEFFECT_COPY
 	}
-	// The video windows (Trim, Snapshots) open where the wheel was, for the first
-	// video of the selection.
+	// The video windows (Trim, Snapshots) open where the wheel was; they are
+	// enabled only when a single video is dragged.
 	if conv.OpensWindow(id) {
 		cx := a.winX + int32(a.wheel.CX)
 		cy := a.winY + int32(a.wheel.CY)

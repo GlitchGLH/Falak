@@ -132,3 +132,31 @@ func TestTrimVideo(t *testing.T) {
 		t.Fatalf("a 0.05 s selection: %v", err)
 	}
 }
+
+// TestWindowToolsOneVideo: Trim and Snapshots work on one video; with
+// several files they are shown disabled (never hidden), and the other video
+// tools stay enabled.
+func TestWindowToolsOneVideo(t *testing.T) {
+	state := func(paths []string) map[string]bool {
+		m := map[string]bool{}
+		for _, it := range ToolItemsFor(paths) {
+			m[it.ID] = it.Enabled
+		}
+		return m
+	}
+	one := state([]string{"a.mp4"})
+	several := state([]string{"a.mp4", "b.mov"})
+	for _, id := range []string{"v:trim", "v:snapshot"} {
+		if e, ok := one[id]; !ok || !e {
+			t.Errorf("one video: %s shown %v, enabled %v; want enabled", id, ok, e)
+		}
+		if e, ok := several[id]; !ok || e {
+			t.Errorf("two videos: %s shown %v, enabled %v; want shown and disabled", id, ok, e)
+		}
+	}
+	for id, e := range several {
+		if !OpensWindow(id) && !e {
+			t.Errorf("two videos: %s disabled, want enabled", id)
+		}
+	}
+}

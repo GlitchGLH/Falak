@@ -485,14 +485,17 @@ var videoEncode = map[string][]string{
 
 func videoItems(path string) []Item { return formatItems(videoTargets, normalizeOwn(path)) }
 
-func videoTools(path string) []Item {
+// videoTools lists the video tools for a selection. The windows (Trim,
+// Snapshots) work on one video, so they are shown disabled for several files.
+func videoTools(paths []string) []Item {
+	one := len(paths) == 1
 	return []Item{
 		{"v:compress", "COMPRESS", "compress", true},
-		{"v:trim", "TRIM", "trim", true},
+		{"v:trim", "TRIM", "trim", one},
 		{"v:metadata", "METADATA", "metadata", true},
 		{"v:mute", "MUTE", "mute", true},
 		{"v:speed", "SPEED 2×", "speed", true},
-		{"v:snapshot", "SNAPSHOT", "snapshot", true},
+		{"v:snapshot", "SNAPSHOT", "snapshot", one},
 		{"v:split", "SPLIT ½", "split", true},
 	}
 }
