@@ -61,7 +61,7 @@ func helpText() string {
 • Select two or more images (or PDFs) and use Merge in the tools to make one PDF.
 • Everything happens on your computer. Some formats need a one-time download of a free engine (FFmpeg for video and audio, PDFium and qpdf for PDF, resvg for SVG).
 
-Supported: images (JPG, PNG, WEBP, AVIF, HEIC, TIFF, BMP, GIF, ICO, SVG, camera RAW), PDF, Word / Excel / PowerPoint (with Microsoft Office or LibreOffice), video (MP4, MOV, MKV, WEBM, AVI, WMV, GIF), audio (MP3, M4A, WAV, FLAC, OGG, OPUS, WMA, AIFF), subtitles (SRT, VTT, ASS, SSA), text files (TXT to PDF, DOCX, RTF, HTML, JPG, PNG, SRT, VTT) and archives (ZIP, 7Z, RAR, TAR, GZIP).
+Supported: images (JPG, PNG, WEBP, AVIF, HEIC, TIFF, BMP, GIF, ICO, SVG, camera RAW), PDF, Word / Excel / PowerPoint (with Microsoft Office or LibreOffice), video (MP4, MOV, MKV, WEBM, AVI, WMV, GIF), audio (MP3, M4A, WAV, FLAC, OGG, OPUS, WMA, AIFF), subtitles (SRT, VTT, ASS, SSA), text files (TXT to PDF, DOCX, RTF, HTML, JPG, PNG, SRT, VTT) and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds only images converts to PDF).
 
 Engines downloaded on first use belong to their authors and keep their own licenses: FFmpeg (GPL), PDFium (BSD), qpdf (Apache 2.0), resvg (Apache 2.0 / MIT).
 
@@ -76,7 +76,7 @@ Engines downloaded on first use belong to their authors and keep their own licen
 • حدّد صورتين أو أكثر (أو ملفي PDF أو أكثر) واستخدم Merge في الأدوات لدمجها في ملف PDF واحد.
 • كل شيء يتم على جهازك. بعض الصيغ تحتاج تنزيل محرك مجاني مرة واحدة فقط (FFmpeg للفيديو والصوت، وPDFium وqpdf لملفات PDF، وresvg لملفات SVG).
 
-المدعوم: الصور (JPG وPNG وWEBP وAVIF وHEIC وTIFF وBMP وGIF وICO وSVG وصور الكاميرا RAW)، وPDF، وملفات Word وExcel وPowerPoint (مع Microsoft Office أو LibreOffice)، والفيديو (MP4 وMOV وMKV وWEBM وAVI وWMV وGIF)، والصوت (MP3 وM4A وWAV وFLAC وOGG وOPUS وWMA وAIFF)، والترجمات (SRT وVTT وASS وSSA)، والملفات النصية (TXT إلى PDF وDOCX وRTF وHTML وJPG وPNG وSRT وVTT)، والأرشيفات (ZIP و7Z وRAR وTAR وGZIP).
+المدعوم: الصور (JPG وPNG وWEBP وAVIF وHEIC وTIFF وBMP وGIF وICO وSVG وصور الكاميرا RAW)، وPDF، وملفات Word وExcel وPowerPoint (مع Microsoft Office أو LibreOffice)، والفيديو (MP4 وMOV وMKV وWEBM وAVI وWMV وGIF)، والصوت (MP3 وM4A وWAV وFLAC وOGG وOPUS وWMA وAIFF)، والترجمات (SRT وVTT وASS وSSA)، والملفات النصية (TXT إلى PDF وDOCX وRTF وHTML وJPG وPNG وSRT وVTT)، والأرشيفات (ZIP و7Z وRAR وTAR وGZIP؛ وملف ZIP أو RAR أو 7Z يحتوي صورًا فقط يتحوّل إلى PDF).
 
 المحركات التي تُنزَّل عند أول استخدام ملك لأصحابها وتخضع لتراخيصها: FFmpeg ‏(GPL)، وPDFium ‏(BSD)، وqpdf ‏(Apache 2.0)، وresvg ‏(Apache 2.0 / MIT).
 
