@@ -142,7 +142,7 @@ the name.
 
 A portable version that needs no installation is attached to the release too.
 
-[VirusTotal scan of the 1.0.0 installer](https://www.virustotal.com/gui/file/8a44dc4c52252f48a2559701b978cdb03fe30b2702f70fc931937c58c6e6da2c)
+[VirusTotal scan of the 2.0.0 installer](VIRUSTOTAL-LINK-AFTER-SCAN)
 
 ## Key-reading helper (optional)
 
@@ -302,6 +302,8 @@ By UncleGlitch (GitHub: @GlitchGLH)
 3. يظهر رمز «فلك» بجوار الساعة. اسحب ملفًا واضغط Shift.
 
 توجد أيضًا نسخة محمولة لا تحتاج تثبيتًا مرفقة بالإصدار.
+
+[نتيجة فحص VirusTotal لمثبّت الإصدار 2.0.0](VIRUSTOTAL-LINK-AFTER-SCAN)
 
 ### مساعد قراءة الأزرار (اختياري)
 
