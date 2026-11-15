@@ -75,8 +75,8 @@ func TestMessageCardButtons(t *testing.T) {
 // mirrored, and the text starts at the right.
 func TestMessageCardMirror(t *testing.T) {
 	fonts := msgTestFonts(t)
-	en := NewMessageCard(1, fonts, false, false, MsgInfo, "Falak", "Short line", []string{"Yes", "No"})
-	ar := NewMessageCard(1, fonts, false, true, MsgInfo, "فلك", "سطر قصير", []string{"نعم", "لا"})
+	en := NewMessageCard(1, fonts, false, false, MsgInfo, "Falak", "How to use", []string{"Yes", "No"})
+	ar := NewMessageCard(1, fonts, false, true, MsgInfo, "فلك", "طريقة الاستخدام", []string{"نعم", "لا"})
 	for i := 0; i < 2; i++ {
 		e, a := en.ButtonRect(i), ar.ButtonRect(i)
 		if d := a[0] - (msgW - e[0] - e[2]); d > 0.01 || d < -0.01 || a[1] != e[1] || a[2] != e[2] {
@@ -153,7 +153,8 @@ func TestMessageCardWrap(t *testing.T) {
 // TestVisualGuillemets: the quotation marks around «فلك» in the helper
 // messages face the right way once drawn (mirrored like brackets).
 func TestVisualGuillemets(t *testing.T) {
-	v := []rune(Visual("عن «فلك» الآن"))
+	// the helper hint's approved Arabic (helper_windows.go)
+	v := []rune(Visual("لا يستطيع «فلك» قراءة زر Shift عند السحب من سطح المكتب"))
 	open, close := -1, -1
 	for i, r := range v {
 		switch r {
