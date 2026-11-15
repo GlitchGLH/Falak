@@ -478,6 +478,36 @@ updated once, before publishing.
   Proposed English: "... and archives (ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds
   only images converts to PDF)." Waiting for the owner's Arabic.
 
+### 2.0.0 tested and scanned (owner, 2026-11-16) - release ready, not published yet
+- Owner's manual test of the rebuilt final files (from `9c78931`): EVERYTHING PASSED.
+  Upgrade from 1.0.1 to 2.0.0 kept the settings (Arabic, dark theme, sounds off) and showed
+  2.0.0 / 2.0.0.0; the main features and the five video windows work; the Arabic How to
+  use card shows the archives line and no marks next to the brackets; the portable zip holds
+  exactly 3 files and runs as 2.0.0; uninstall kept the settings once and deleted them once;
+  reinstalling works.
+- Owner's VirusTotal scans (SHA-256 checked on each page; Microsoft Undetected on all three):
+  - `FalakSetup-2.0.0.exe`: **1/71**, only Trapmine (Malicious.moderate.ml.score).
+    https://www.virustotal.com/gui/file/9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36
+  - `Falak.exe`: **2/71**, Trapmine (Malicious.moderate.ml.score) and Elastic (Malicious
+    (moderate Confidence)).
+    https://www.virustotal.com/gui/file/e83797282cda12db87117f19e26b561af3591a471a79b94557aa1cbcfe397a4c
+  - `Falak-2.0.0-portable.zip`: **1/66**, only Elastic (Malicious (moderate Confidence)).
+    https://www.virustotal.com/gui/file/1701561cd89de5b5fc2aa87015d3bafbdd3f1147cd700c152afc1f80beaad6d2
+- `5116091` "2.0.0: VirusTotal link for the 2.0.0 installer": the installer's scan link in
+  README.md (English and Arabic lines; only the link changed, no Arabic text) and
+  RELEASE_NOTES.md (no placeholder left).
+- `93d85fd` "2.0.0: README screenshots match 2.0.0": all 40 `docs/` PNGs rendered again
+  off-screen (local `TestShots` + `TestShotsREADME`, same settings; `TestShotsREADME` now
+  writes to `$SHOTS_README_OUT`, not straight into `docs/`) and compared with pixcmp: 34
+  identical (`progress-en-*` too), 6 replaced: `tray-menu-en-light/dark`,
+  `tray-menu-ar-light/dark` (now "2.0.0 · By UncleGlitch") and `progress-ar-light/dark`
+  (now the file name first). After the copy: 40 of 40 identical to a fresh render.
+- Deleted on the owner's decision (build/ is not tracked, no commit): `build/1.0.1/`,
+  `build/phase1`, `phase2`, `phase2b`, `phase2c`, `phase2d`, `phase3`, `phase4`, `phase5`.
+  `build/` now holds only `Falak.exe`, `FalakSetup-2.0.0.exe`, `Falak-2.0.0-portable.zip`,
+  `SHA256SUMS.txt` (untouched; `sha256sum -c` OK before and after the deletion).
+- No rebuild after `9c78931`: every later commit is docs only.
+
 ### FINAL build 2.0.0, rebuilt (2026-11-15, from `9c78931`; not published yet) - CURRENT
 - Owner's decisions (not yet tested the earlier final files): fix the faint marks in the
   Arabic How to use card before the release; add a VirusTotal line to the Arabic README.
@@ -765,27 +795,17 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- **2.0.0 final files rebuilt** (see "FINAL build 2.0.0, rebuilt"): `build/Falak.exe`,
-  `build/FalakSetup-2.0.0.exe`, `build/Falak-2.0.0-portable.zip`, `build/SHA256SUMS.txt`
-  from `9c78931`. Docs final except the VirusTotal links (README EN + AR placeholder
-  `VIRUSTOTAL-LINK-AFTER-SCAN`, RELEASE_NOTES `<VirusTotal link — added after the scan>`).
-  The 1.0.1 files are in `build/1.0.1/`; `build/phase1` ... `phase5` still there.
+- **2.0.0 is tested, scanned and ready to publish** (see "2.0.0 tested and scanned"): the
+  final files in `build/` (from `9c78931`), docs final (VirusTotal link in README EN + AR and
+  RELEASE_NOTES, README screenshots match 2.0.0). Old build folders deleted.
 
-### NEXT (release steps still to do, in order)
-1. Owner's manual test of the rebuilt final files: upgrade from
-   `build/1.0.1/FalakSetup-1.0.1.exe` to `build/FalakSetup-2.0.0.exe` (version in the tray
-   menu, settings kept, main features, the Arabic How to use card's engines line without
-   marks), the portable zip in a new folder, uninstall keeping and deleting settings.
-2. Owner's call: re-render the stale README images `docs/tray-menu-*` (1.0 subtitle) and
-   `docs/progress-ar-*` (old order) - docs only, no rebuild.
-3. Owner's VirusTotal scan of the three files (by hand). Then, docs only, no rebuild: the
-   FalakSetup-2.0.0.exe scan link in README (EN + AR placeholders) and RELEASE_NOTES.md.
-4. After the owner's approval only: delete `build/1.0.1/` and `build/phase1` ... `phase5`.
-5. Only on the owner's explicit approval: tag `v2.0.0` on the commit that holds the final
-   docs (the exe was built from `9c78931`; later commits are docs only), push `main` (never
-   force), GitHub release "Falak 2.0.0" with `FalakSetup-2.0.0.exe`,
-   `Falak-2.0.0-portable.zip`, `SHA256SUMS.txt` and the 2.0.0 notes; download the assets
-   back and `sha256sum -c`. The v1.0.0 release and its assets stay untouched.
+### NEXT (the one remaining step)
+1. Only on the owner's explicit approval, in its own round: push `main` (never force), tag
+   `v2.0.0` (annotated) on the commit that holds the final docs (the exe was built from
+   `9c78931`; later commits are docs only), GitHub release "Falak 2.0.0" with
+   `FalakSetup-2.0.0.exe`, `Falak-2.0.0-portable.zip`, `SHA256SUMS.txt` and the 2.0.0 notes;
+   download the assets back and `sha256sum -c`. The v1.0.0 release and its assets stay
+   untouched.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
