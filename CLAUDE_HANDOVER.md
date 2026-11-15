@@ -278,15 +278,18 @@ After a pin change: `go test -tags enginesnet -run TestEnginePins -v ./conv`.
   `961a735` (hashes above).
 
 ### IN PROGRESS
-- Nothing in progress. `build/` holds the 1.0.1 build from `961a735` (not published).
+- Nothing in progress. `build/` holds the 1.0.1 build from `961a735` (not published). The
+  user who had the blocked wheel confirmed 1.0.1 fixes it (2026-11-15). GitHub release
+  postponed until new features are added (owner's decision).
 
 ### NEXT
 1. Owner's manual test of 1.0.1.
-2. Send 1.0.1 to the user who had the blocked wheel and read his new `falak.log` (the
-   "full-screen check" / "QUNS_BUSY ignored" lines name the window behind QUNS_BUSY).
+2. DONE (2026-11-15): 1.0.1 was sent to the user who had the blocked wheel; he confirmed it
+   fixed the problem (the wheel now opens). His new `falak.log` was not reviewed in a session.
 3. VirusTotal scan of the 1.0.1 files.
-4. GitHub release v1.0.1. Before the v1.0.1 release: update the README VirusTotal link to
-   the 1.0.1 scan and write release notes for 1.0.1.
+4. GitHub release v1.0.1: POSTPONED (owner's decision 2026-11-15). New features come first;
+   publishing happens later, only on the owner's decision. Before that release: update the
+   README VirusTotal link to the 1.0.1 scan and write release notes for 1.0.1.
 
 ### Rejected by the owner (do not implement)
 - Proposal 3: on a manual start that is not the first run, open the tray menu or the How to
