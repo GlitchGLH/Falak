@@ -45,9 +45,9 @@ Unsigned build: Windows SmartScreen may show a warning; choose More info, then R
 ### SHA-256
 
 ```
-6356f653e949bac0b53d6872be500ae651c6c63013b74575e0c4f60d45a3f7d2  Falak.exe
-cbc5d1547ebc0a91160b625f05084245c4d75f7f555a4324a87579e1d5db9069  FalakSetup-2.0.0.exe
-cc760e08ee4f61568321257506b55f9e7f112a6c9c9cce978b7399f70da141dd  Falak-2.0.0-portable.zip
+e83797282cda12db87117f19e26b561af3591a471a79b94557aa1cbcfe397a4c  Falak.exe
+9d5cf981a0d7b7373801483aed4552f18541f3d087bd04a567a3a7f15707df36  FalakSetup-2.0.0.exe
+1701561cd89de5b5fc2aa87015d3bafbdd3f1147cd700c152afc1f80beaad6d2  Falak-2.0.0-portable.zip
 ```
 
 VirusTotal scan of FalakSetup-2.0.0.exe: <VirusTotal link — added after the scan>
