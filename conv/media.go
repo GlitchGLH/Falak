@@ -524,13 +524,6 @@ func runVideo(ctx context.Context, path, id string, progress func(float64)) (str
 	case id == "v:mute":
 		dst := uniquePath(path, "-muted", ext)
 		return ffmpeg(ctx, path, dst, []string{"-map", "0:v", "-c", "copy", "-an"}, mi.duration, progress)
-	case id == "v:snapshot":
-		dst := uniquePath(path, "-snapshot", ".png")
-		at := 0.0
-		if mi.duration > 0 {
-			at = mi.duration / 2
-		}
-		return ffmpegPre(ctx, []string{"-ss", fmt.Sprintf("%.3f", at)}, path, dst, []string{"-frames:v", "1"}, 0, progress)
 	case id == "v:speed":
 		// twice as fast, sound included (pitch kept)
 		dst := uniquePath(path, "-2x", ".mp4")

@@ -132,7 +132,7 @@ func Thumbs(ctx context.Context, path string, duration float64, n, maxW, maxH in
 // running at once (the window then starts the work itself).
 func OpensWindow(id string) bool {
 	switch id {
-	case "v:trim":
+	case "v:trim", "v:snapshot":
 		return true
 	}
 	return false

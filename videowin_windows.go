@@ -2,7 +2,8 @@
 
 package main
 
-// The video windows (Trim Video; later Snapshots, Split, Speed, Crop): our
+// The video windows (Trim Video, Video Snapshots; later Split, Speed,
+// Crop): our
 // own layered window like the Compress dialog, opening where the wheel was.
 // Frames and thumbnails come from FFmpeg on other goroutines; they hand
 // their results over under vwin.mu and post wmVideoUpdate, and only the
@@ -22,17 +23,26 @@ import (
 	"raha/ui"
 )
 
-const wmVideoUpdate = WM_APP + 40
+const (
+	wmVideoUpdate = WM_APP + 40
+	wmVideoSaved  = WM_APP + 41 // a snapshot was saved (wParam: the window's gen)
+	savedTimer    = 51          // hides the "Saved" line
+	savedMs       = 2000
+	VK_LEFT       = 0x25
+	VK_RIGHT      = 0x27
+)
 
 // the kinds of video window
 const (
 	vkTrim = iota + 1
+	vkSnap
 )
 
 var vwin struct {
 	wnd      uintptr
 	kind     int
 	trim     *ui.TrimDialog
+	snap     *ui.SnapDialog
 	path     string
 	id       string // the wheel item ("v:trim")
 	label    string // its wheel label, for the job's title and results
@@ -75,7 +85,7 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	}
 	vwin.path, vwin.id, vwin.label = path, id, label
 	vwin.info = conv.VideoInfo{}
-	vwin.trim = nil
+	vwin.trim, vwin.snap = nil, nil
 	var w, h, tw, th, pw, ph int
 	switch id {
 	case "v:trim":
@@ -92,6 +102,18 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 		w, h = vwin.trim.Size()
 		tw, th = vwin.trim.ThumbSize()
 		pw, ph = vwin.trim.PreviewSize()
+	case "v:snapshot":
+		vwin.kind = vkSnap
+		vwin.snap = ui.NewSnapDialog(scale, a.fonts, darkMode(), arabic, ui.SnapLabels{
+			Title:         T("Video Snapshots", "لقطات من الفيديو"),
+			File:          filepath.Base(path),
+			Save:          T("Save Snapshot", "حفظ اللقطة"),
+			Saved:         T("Saved", "تم الحفظ"),
+			Preparing:     T("Preparing the video…", "جار تجهيز الفيديو…"),
+			PreviewFailed: T("Couldn't show the preview", "تعذّر عرض المعاينة"),
+		})
+		w, h = vwin.snap.Size()
+		pw, ph = vwin.snap.PreviewSize() // no thumbnails (tw, th stay 0)
 	default:
 		return
 	}
@@ -167,9 +189,11 @@ func videoWork(ctx context.Context, gen int, path string, req chan float64, pw, 
 	if !hand(func() { vwin.upInfo, vwin.upReady, vwin.upProg = info, true, -1 }) {
 		return
 	}
-	go conv.Thumbs(ctx, path, info.Duration, ui.StripCells, tw, th, func(i int, img *image.RGBA) {
-		hand(func() { vwin.upThumbs[i] = img })
-	})
+	if tw > 0 {
+		go conv.Thumbs(ctx, path, info.Duration, ui.StripCells, tw, th, func(i int, img *image.RGBA) {
+			hand(func() { vwin.upThumbs[i] = img })
+		})
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -227,6 +251,20 @@ func takeVideoUpdates() {
 			}
 		}
 	}
+	if d := vwin.snap; d != nil {
+		d.Progress = prog
+		if failed {
+			d.Failed = true
+		}
+		if ready && !failed && d.Duration == 0 {
+			vwin.info = info
+			d.SetVideo(info.Duration, info.FrameRate())
+			requestFrame(info.FrameSeek(0))
+		}
+		if frame != nil {
+			d.Frame = frame
+		}
+	}
 }
 
 func hideVideoWindow() {
@@ -234,6 +272,7 @@ func hideVideoWindow() {
 		return
 	}
 	vwin.shown = false
+	pKillTimer.Call(vwin.wnd, savedTimer)
 	if vwin.cancel != nil {
 		vwin.cancel()
 	}
@@ -256,6 +295,8 @@ func refreshVideoWindow() {
 	switch {
 	case vwin.trim != nil:
 		img = vwin.trim.Render()
+	case vwin.snap != nil:
+		img = vwin.snap.Render()
 	default:
 		return
 	}
@@ -279,15 +320,55 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			refreshVideoWindow()
 		}
 		return 0
+	case wmVideoSaved:
+		vwin.mu.Lock()
+		same := int(wParam) == vwin.gen
+		vwin.mu.Unlock()
+		if d := vwin.snap; d != nil && same && vwin.shown {
+			d.Saved = true
+			pSetTimer.Call(hwnd, savedTimer, savedMs, 0)
+			refreshVideoWindow()
+		}
+		return 0
+	case WM_TIMER:
+		if wParam == savedTimer {
+			pKillTimer.Call(hwnd, savedTimer)
+			if d := vwin.snap; d != nil {
+				d.Saved = false
+				refreshVideoWindow()
+			}
+		}
+		return 0
 	case WM_KEYDOWN:
 		switch wParam {
 		case VK_ESCAPE:
 			hideVideoWindow()
 		case vkReturn:
 			app.videoAction()
+		case VK_LEFT, VK_RIGHT: // a frame towards that side of the scrubber
+			if d := vwin.snap; d != nil && d.Ready() {
+				n := 1
+				if (wParam == VK_LEFT) != d.RTL {
+					n = -1
+				}
+				snapShow(d, d.Pos+n)
+			}
 		}
 		return 0
 	case WM_LBUTTONDOWN:
+		if d := vwin.snap; d != nil {
+			switch d.HitTest(x, y) {
+			case ui.SnapSlider:
+				d.Dragging = true
+				snapShow(d, d.FrameAtX(x))
+				pSetCapture.Call(hwnd)
+			case ui.SnapNone:
+				vwin.drag = true
+				vwin.dragOff = POINT{int32(x), int32(y)}
+				pSetCapture.Call(hwnd)
+			}
+			return 0
+		}
 		if d := vwin.trim; d != nil {
 			switch h := d.HitTest(x, y); h {
 			case ui.TrimStartHandle, ui.TrimEndHandle:
@@ -321,6 +402,10 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			trimMoveTo(d, x)
 			return 0
 		}
+		if d := vwin.snap; d != nil && d.Dragging {
+			snapShow(d, d.FrameAtX(x))
+			return 0
+		}
 		if !vwin.tracking {
 			tme := trackMouseEvent{DwFlags: TME_LEAVE, HwndTrack: hwnd}
 			tme.CbSize = uint32(unsafe.Sizeof(tme))
@@ -337,11 +422,32 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 			d.Active = 0
 			refreshVideoWindow()
 		}
+		if d := vwin.snap; d != nil && d.Dragging {
+			d.Dragging = false
+		}
 		return 0
 	case WM_LBUTTONUP:
 		if vwin.drag {
 			vwin.drag = false
 			pReleaseCapture.Call()
+			return 0
+		}
+		if d := vwin.snap; d != nil {
+			if d.Dragging {
+				d.Dragging = false
+				pReleaseCapture.Call()
+				return 0
+			}
+			switch d.HitTest(x, y) {
+			case ui.SnapClose:
+				hideVideoWindow()
+			case ui.SnapPrev:
+				snapShow(d, d.Pos-1)
+			case ui.SnapNext:
+				snapShow(d, d.Pos+1)
+			case ui.SnapSave:
+				app.videoAction()
+			}
 			return 0
 		}
 		if d := vwin.trim; d != nil {
@@ -378,11 +484,54 @@ func trimMoveTo(d *ui.TrimDialog, x float64) {
 	refreshVideoWindow()
 }
 
+// snapShow moves the Snapshots window to frame k and asks for its picture.
+func snapShow(d *ui.SnapDialog, k int) {
+	if d.Step(k - d.Pos) {
+		requestFrame(vwin.info.FrameSeek(d.Pos))
+	}
+	refreshVideoWindow()
+}
+
 // videoAction is Enter or the window's button.
 func (a *App) videoAction() {
 	if d := vwin.trim; d != nil {
 		a.trimStart(d)
 	}
+	if d := vwin.snap; d != nil {
+		a.snapSave(d)
+	}
+}
+
+// snapSave saves the frame shown as a PNG beside the video; the window
+// stays open, and "Saved" shows once the file is there. Several saves may
+// run at once; each gets its own name. Closing the window doesn't stop a
+// save that has started.
+func (a *App) snapSave(d *ui.SnapDialog) {
+	if !d.Ready() {
+		return
+	}
+	path, t := vwin.path, vwin.info.FrameSeek(d.Pos)
+	vwin.mu.Lock()
+	gen := vwin.gen
+	vwin.mu.Unlock()
+	wnd := vwin.wnd
+	logf("snapshot of %s at frame %d (%.3f s)", filepath.Base(path), d.Pos, t)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logf("panic saving a snapshot of %s: %v", path, r)
+			}
+		}()
+		out, err := conv.SnapshotAt(context.Background(), path, t)
+		if err != nil {
+			logf("snapshot failed: %v", err)
+			a.showFailure(filepath.Base(path) + ": " + err.Error())
+			return
+		}
+		logf("snapshot saved: %s", out)
+		notifyCreated(out)
+		pPostMessageW.Call(wnd, wmVideoSaved, uintptr(gen), 0)
+	}()
 }
 
 // trimStart checks the selection, then closes the window and starts the
