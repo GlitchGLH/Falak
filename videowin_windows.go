@@ -525,7 +525,7 @@ func (a *App) snapSave(d *ui.SnapDialog) {
 		out, err := conv.SnapshotAt(context.Background(), path, t)
 		if err != nil {
 			logf("snapshot failed: %v", err)
-			a.showFailure(filepath.Base(path) + ": " + err.Error())
+			a.showError(T("Couldn't save the snapshot", "تعذّر حفظ اللقطة"), filepath.Base(path)+": "+err.Error())
 			return
 		}
 		logf("snapshot saved: %s", out)

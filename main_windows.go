@@ -1359,7 +1359,12 @@ func (a *App) handleResults() {
 // is shown as well. It runs on its own goroutine so the wheel, the tray and
 // other jobs keep working while it is open.
 func (a *App) showFailure(errText string) {
-	title := T("Conversion failed", "تعذّر التحويل")
+	a.showError(T("Conversion failed", "تعذّر التحويل"), errText)
+}
+
+// showError shows an error under its own title, in a Falak message window
+// (a tray balloon alone may never be seen) and in a balloon.
+func (a *App) showError(title, errText string) {
 	a.balloon(title, errText, true)
 	go messageBox(title+"\n\n"+errText, MB_ICONERROR)
 }
