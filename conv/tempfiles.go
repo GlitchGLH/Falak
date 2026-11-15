@@ -39,6 +39,26 @@ func tempFor(dst string) string {
 	return filepath.Join(dir, fmt.Sprintf("%d-%d%s", time.Now().UnixNano(), n, filepath.Ext(dst)))
 }
 
+// checkTempDir makes sure the folder of the temporary file tmp exists.
+// When it can't be made (no permission to write in the user's folder), the
+// error names the user's folder and gives Windows' own reason, such as
+// "Access is denied.".
+func checkTempDir(tmp string) error {
+	dir := filepath.Dir(tmp)
+	err := os.MkdirAll(dir, 0o755)
+	if err == nil {
+		return nil
+	}
+	var pe *os.PathError
+	if errors.As(err, &pe) {
+		err = pe.Err
+	}
+	if filepath.Base(dir) == tempDirName {
+		dir = filepath.Dir(dir)
+	}
+	return fmt.Errorf("%s: %v", dir, err)
+}
+
 // retryWait is how long a rename or delete keeps trying while another
 // program (a folder watcher, an antivirus scan of the new file) holds it.
 var retryWait = 5 * time.Second

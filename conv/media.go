@@ -378,6 +378,11 @@ func ffmpegRaw(ctx context.Context, pre []string, src, tmp string, args []string
 	full = append(full, args...)
 	// progress ten times a second, so the bar follows the real work closely
 	full = append(full, "-progress", "pipe:1", "-stats_period", "0.1", "-nostats", tmp)
+	// a folder that can't be written is reported in Windows' own words
+	// (FFmpeg would only say "No such file or directory")
+	if err := checkTempDir(tmp); err != nil {
+		return err
+	}
 	cmd := exec.CommandContext(ctx, FFmpegPath(), full...)
 	PrepareCmd(cmd)
 	var stderr strings.Builder
@@ -400,7 +405,7 @@ func ffmpegRaw(ctx context.Context, pre []string, src, tmp string, args []string
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), ffmpegError(err, full, stderr.String()))
+		return ffmpegFailed(ffmpegError(err, full, stderr.String()))
 	}
 	return nil
 }
@@ -408,23 +413,66 @@ func ffmpegRaw(ctx context.Context, pre []string, src, tmp string, args []string
 // Logf receives diagnostics; the Windows app points it at falak.log.
 var Logf = func(format string, args ...any) {}
 
+// ffmpegFailure is a failed FFmpeg run; cause is the line that says why.
+type ffmpegFailure struct{ cause string }
+
+func ffmpegFailed(cause string) error { return &ffmpegFailure{cause} }
+
+func (e *ffmpegFailure) Error() string {
+	return fmt.Sprintf(tr("Conversion failed: %s", "فشل التحويل: %s"), e.cause)
+}
+
+// Cause is the reason err gives, without the "Conversion failed:" frame
+// (for windows whose own title already says what failed).
+func Cause(err error) string {
+	var f *ffmpegFailure
+	if errors.As(err, &f) {
+		return f.cause
+	}
+	return err.Error()
+}
+
 // ffmpegError logs a failed FFmpeg run (its arguments and the last lines of
-// its error output) and returns the line to show: the most specific error
-// line, not FFmpeg's closing "Conversion failed!", which says nothing.
+// its error output) and returns the line to show: the first line that
+// states an error (FFmpeg names the cause first; the lines after it are its
+// consequences), never the statistics line ("frame= ... speed=") nor the
+// closing "Conversion failed!", which say nothing.
 func ffmpegError(err error, args []string, stderr string) string {
 	Logf("ffmpeg failed (%v)\n  args: %q\n  last stderr lines:\n%s", err, args, indentTail(stderr, 15))
-	lines := strings.Split(strings.TrimSpace(stderr), "\n")
-	for i := len(lines) - 1; i >= 0; i-- {
-		l := strings.TrimSpace(lines[i])
-		if l == "" || l == "Conversion failed!" {
-			continue
+	var lines []string
+	for _, l := range strings.Split(strings.ReplaceAll(stderr, "\r", "\n"), "\n") {
+		if l = strings.TrimSpace(l); l != "" && !ffmpegNoise(l) {
+			lines = append(lines, l)
 		}
-		return clip(l, 160)
+	}
+	for _, l := range lines {
+		if !ffmpegConsequence.MatchString(l) && ffmpegErrorWords.MatchString(l) {
+			return clip(reFFmpegTag.ReplaceAllString(l, ""), 160)
+		}
+	}
+	if n := len(lines); n > 0 {
+		return clip(reFFmpegTag.ReplaceAllString(lines[n-1], ""), 160)
 	}
 	if err != nil {
 		return clip(err.Error(), 160)
 	}
 	return lastLine("")
+}
+
+var (
+	// "[image2 @ 0000020603bc0340] " in front of a line
+	reFFmpegTag = regexp.MustCompile(`^\[[^\]]*\]\s*`)
+	// words of a line that states an error
+	ffmpegErrorWords = regexp.MustCompile(`(?i)error|could not|couldn't|cannot|can't|unable|invalid|no such|denied|not found|failed|unsupported|not supported|unknown encoder|unknown decoder|no space`)
+	// lines that only follow from the first error
+	ffmpegConsequence = regexp.MustCompile(`(?i)task finished with error code|terminating thread with return code|error muxing a packet|error submitting a packet to the muxer|error while filtering|error closing file|nothing was written into output file`)
+	// the statistics and summary lines, and image2's warning about a
+	// single picture's name (it is not an error)
+	reFFmpegStats = regexp.MustCompile(`^(frame|size)=|\bspeed=|\bLsize=|^video:\S+ audio:|image sequence pattern|Use a pattern such as`)
+)
+
+func ffmpegNoise(l string) bool {
+	return l == "Conversion failed!" || strings.HasPrefix(l, "Last message repeated") || reFFmpegStats.MatchString(l)
 }
 
 // indentTail returns the last n non-empty lines of s, indented for the log.
@@ -709,7 +757,7 @@ func gifPalettePass(ctx context.Context, src, pal, vf, nullDev string, duration 
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		return fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), ffmpegError(err, full, stderr.String()))
+		return ffmpegFailed(ffmpegError(err, full, stderr.String()))
 	}
 	return nil
 }
@@ -757,7 +805,7 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	}
 	if err := completePassLogs(passlog, 5*time.Second); err != nil {
 		Logf("two-pass: %v", err)
-		return "", fmt.Errorf(tr("Conversion failed: %s", "فشل التحويل: %s"), clip(err.Error(), 160))
+		return "", ffmpegFailed(clip(err.Error(), 160))
 	}
 	// pass 2: the real encode, into the temporary file
 	// -pass:v / -passlogfile:v: only the video is two-pass. A plain "-pass 2"
