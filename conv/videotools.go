@@ -97,11 +97,28 @@ func atempoChain(speed float64) string {
 	return strings.Join(append(steps, "atempo="+strconv.FormatFloat(speed, 'f', -1, 64)), ",")
 }
 
+// SmoothApplies reports whether "Smooth slow motion" works at speed: only
+// slower than normal (0.25×, 0.5×, 0.75×).
+func SmoothApplies(speed float64) bool { return speed > 0 && speed < 1 }
+
+// speedFilter is the picture's filter: the new timing, then the video's
+// own frame rate. Normally slower repeats frames and faster drops them;
+// smooth (slow speeds only) makes the missing frames by motion
+// interpolation (FFmpeg's minterpolate) instead of repeating them.
+func speedFilter(speed, fr float64, smooth bool) string {
+	rate := strconv.FormatFloat(fr, 'f', -1, 64)
+	if smooth && SmoothApplies(speed) {
+		return fmt.Sprintf("setpts=PTS/%s,minterpolate=fps=%s", SpeedText(speed), rate)
+	}
+	return fmt.Sprintf("setpts=PTS/%s,fps=%s", SpeedText(speed), rate)
+}
+
 // SpeedVideo plays the video at speed (0.25 = four times slower, 4 = four
 // times faster) into "<name>-<speed>x.mp4" beside it, never replacing a
 // file. The sound keeps its pitch; a video without sound stays silent. The
-// frame rate stays the video's own: faster drops frames, slower repeats them.
-func SpeedVideo(ctx context.Context, path string, speed float64, progress func(float64)) (string, error) {
+// frame rate stays the video's own: faster drops frames, slower repeats
+// them, or, with smooth, makes new ones in between (see speedFilter).
+func SpeedVideo(ctx context.Context, path string, speed float64, smooth bool, progress func(float64)) (string, error) {
 	if speed <= 0 {
 		return "", errors.New(tr("This tool isn't available yet", "هذه الأداة غير متاحة بعد"))
 	}
@@ -109,7 +126,7 @@ func SpeedVideo(ctx context.Context, path string, speed float64, progress func(f
 	fr := VideoInfo{FPS: mi.fps}.FrameRate()
 	dst := uniquePath(path, "-"+SpeedText(speed)+"x", ".mp4")
 	args := []string{"-map", "0:v:0", "-map", "0:a:0?",
-		"-filter:v", fmt.Sprintf("setpts=PTS/%s,fps=%s", SpeedText(speed), strconv.FormatFloat(fr, 'f', -1, 64)),
+		"-filter:v", speedFilter(speed, fr, smooth),
 		"-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart"}
 	if mi.hasAudio {
 		args = append(args, "-filter:a", atempoChain(speed), "-c:a", "aac", "-b:a", "192k")

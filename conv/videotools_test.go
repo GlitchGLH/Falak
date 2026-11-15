@@ -91,7 +91,7 @@ func TestSpeedVideo(t *testing.T) {
 		speed float64
 		name  string
 	}{{0.5, "clip-0.5x.mp4"}, {4, "clip-4x.mp4"}, {0.25, "clip-0.25x.mp4"}, {0.5, "clip-0.5x (1).mp4"}} {
-		out, err := SpeedVideo(ctx, clip, c.speed, nil)
+		out, err := SpeedVideo(ctx, clip, c.speed, false, nil)
 		if err != nil {
 			t.Fatalf("%v: %v", c.speed, err)
 		}
@@ -113,12 +113,60 @@ func TestSpeedVideo(t *testing.T) {
 	if _, err := ffmpeg(ctx, clip, silent, []string{"-map", "0:v", "-c", "copy", "-an"}, 4, nil); err != nil {
 		t.Fatal(err)
 	}
-	out, err := SpeedVideo(ctx, silent, 2, nil)
+	out, err := SpeedVideo(ctx, silent, 2, false, nil)
 	if err != nil {
 		t.Fatalf("a video without sound: %v", err)
 	}
 	if mi := probe(out); mi.hasAudio || math.Abs(mi.duration-2) > 0.15 {
 		t.Errorf("a video without sound: %.3f s, sound %v", mi.duration, mi.hasAudio)
+	}
+}
+
+// TestSmoothSlowMotion: at 0.5× the plain output repeats every frame (its
+// odd frames equal the even ones), the smooth one makes a new frame in
+// between; same length, frame rate and sound. Fast speeds ignore smooth.
+func TestSmoothSlowMotion(t *testing.T) {
+	clip := makeClip(t, 2)
+	ctx := context.Background()
+	plain, err := SpeedVideo(ctx, clip, 0.5, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	smooth, err := SpeedVideo(ctx, clip, 0.5, true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Base(smooth) != "clip-0.5x (1).mp4" {
+		t.Errorf("smooth output %s", filepath.Base(smooth))
+	}
+	mi := probe(smooth)
+	if math.Abs(mi.duration-4) > 0.15 || math.Abs(mi.fps-24) > 0.01 || !mi.hasAudio {
+		t.Errorf("smooth: %.3f s, %v fps, sound %v", mi.duration, mi.fps, mi.hasAudio)
+	}
+	frame := func(path string, k int) *image.RGBA {
+		img, err := FrameAt(ctx, path, (float64(k)+0.25)/24, 4000, 4000, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return img
+	}
+	// repeated, every source frame shows twice, so one of two neighbouring
+	// pairs is a repeat; interpolated, every output frame is new
+	pair := func(path string) (float64, float64) {
+		a, b, c := frame(path, 20), frame(path, 21), frame(path, 22)
+		return diffImages(a, b), diffImages(b, c)
+	}
+	p1, p2 := pair(plain)
+	s1, s2 := pair(smooth)
+	t.Logf("neighbour differences: plain %.2f %.2f, smooth %.2f %.2f", p1, p2, s1, s2)
+	if math.Min(p1, p2) > 1 {
+		t.Errorf("plain: no repeated frame (%.2f, %.2f)", p1, p2)
+	}
+	if math.Min(s1, s2) < 3*math.Max(math.Min(p1, p2), 0.5) {
+		t.Errorf("smooth: a repeated frame (%.2f, %.2f)", s1, s2)
+	}
+	if speedFilter(2, 24, true) != speedFilter(2, 24, false) || SmoothApplies(1.25) || !SmoothApplies(0.75) {
+		t.Error("smooth must apply to slow speeds only")
 	}
 }
 

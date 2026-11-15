@@ -144,9 +144,11 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	case "v:speed":
 		vwin.kind = vkSpeed
 		chips := make([]string, len(conv.Speeds))
+		smoothOK := make([]bool, len(conv.Speeds))
 		sel := 0
 		for i, s := range conv.Speeds {
 			chips[i] = conv.SpeedText(s) + "×"
+			smoothOK[i] = conv.SmoothApplies(s)
 			if s == 2 { // the old SPEED 2× is where the choice starts
 				sel = i
 			}
@@ -158,7 +160,10 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 			Change:        T("Change Speed", "تغيير السرعة"),
 			Preparing:     T("Preparing the video…", "جار تجهيز الفيديو…"),
 			PreviewFailed: T("Couldn't show the preview", "تعذّر عرض المعاينة"),
+			Smooth:        T("Smooth slow motion", "حركة بطيئة ناعمة"),
+			SmoothHint:    T("Takes longer to process", "تستغرق المعالجة وقتًا أطول"),
 			Chips:         chips,
+			SmoothOK:      smoothOK,
 		}, sel)
 		w, h = vwin.speed.Size()
 		pw, ph = vwin.speed.PreviewSize() // no thumbnails; the preview plays
@@ -638,6 +643,9 @@ func videoProc(hwnd, msg, wParam, lParam uintptr) (ret uintptr) {
 					speedPlay(vwin.playAt)
 					refreshVideoWindow()
 				}
+			case ui.SpeedSmooth:
+				d.Smooth = !d.Smooth
+				refreshVideoWindow()
 			case ui.SpeedButton:
 				app.videoAction()
 			}
@@ -755,14 +763,14 @@ func (a *App) speedStart(d *ui.SpeedDialog) {
 	if !d.Ready() {
 		return
 	}
-	path, speed := vwin.path, conv.Speeds[d.Sel]
+	path, speed, smooth := vwin.path, conv.Speeds[d.Sel], d.SmoothOn()
 	cx := vwin.x + int32(float64(d.W)/2)
 	cy := vwin.y + int32(float64(d.H)/2)
 	scale := d.Scale
 	hideVideoWindow()
-	logf("speed %s: %s×", filepath.Base(path), conv.SpeedText(speed))
+	logf("speed %s: %s× (smooth %v)", filepath.Base(path), conv.SpeedText(speed), smooth)
 	a.launchVideoJobTitled(path, vwin.id, vwin.label, speedTitle(speed), cx, cy, scale, func(ctx context.Context, report func(float64)) (string, error) {
-		return conv.SpeedVideo(ctx, path, speed, report)
+		return conv.SpeedVideo(ctx, path, speed, smooth, report)
 	})
 }
 
