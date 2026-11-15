@@ -52,7 +52,85 @@ By UncleGlitch (GitHub: @GlitchGLH)
 | Audio | MP3, M4A, WAV, FLAC, OGG, OPUS, WMA, AIFF |
 | Subtitles | SRT, VTT, ASS, SSA |
 | Text files | TXT to PDF, DOCX, RTF, HTML, JPG, PNG, SRT, VTT |
-| Archives | ZIP, 7Z, RAR, TAR, GZIP |
+| Archives | ZIP, 7Z, RAR, TAR, GZIP; a ZIP, RAR or 7Z that holds only images converts to PDF |
+
+An archive of images becomes one PDF with one image per page, in natural
+order (2 before 10), next to the archive. Files such as `Thumbs.db` and
+`desktop.ini` inside it are ignored.
+
+## Tools
+
+Press **Alt**, **Ctrl** or **Tab** while the wheel is showing to switch
+between formats and tools. A tool that doesn't fit the dragged files is shown
+disabled, never hidden.
+
+- **Video:** COMPRESS, TRIM, METADATA, MUTE, SPEED, SNAPSHOT, SPLIT, CROP
+- **Images:** COMPRESS, METADATA, ROTATE, RESIZE 50%, WHITE BG, BLACK BG
+  (transparent images), MERGE PDF (two or more images)
+- **Audio:** COMPRESS, METADATA, NORMALIZE, VISUALIZE, CHANNELS
+- **PDF:** COMPRESS, ROTATE, SPLIT, MERGE (two or more PDFs)
+- **Archives:** EXTRACT
+
+**Compressing several files** at once saves the copies in a new folder named
+after the date and time, such as `Compressed 2026-11-15 05-30`, next to the
+originals. Each copy keeps its original name. One file is saved next to the
+original as before.
+
+**Messages and questions** appear in Falak's own window, in its style and
+language, instead of Windows message boxes. Press Ctrl+C to copy a message.
+
+## Video windows
+
+TRIM, SNAPSHOT, SPLIT, SPEED and CROP open a window with a preview of the
+video. They work on one video at a time (with several videos dragged they are
+disabled). The preview is silent; the saved files keep their sound. Press
+Enter to run, or Esc to close.
+
+- **Trim Video:** drag the two ends to keep a part of the video. The cut is
+  exact to the frame. Saved as `<name>-trimmed`.
+- **Video Snapshots:** move to any frame (the Left and Right keys step one
+  frame) and save it as a PNG picture, `<name>-snapshot.png`. The window
+  stays open for more snapshots.
+- **Split Video:** add split points on the timeline, drag them, or remove
+  them with their ×. Every point starts a new part, cut exactly at that
+  frame. The parts are saved in a new folder, `<name> - parts`.
+- **Change Video Speed:** choose a speed from 0.25× to 4× while the preview
+  plays at that speed. The sound keeps its natural pitch. Saved as
+  `<name>-0.5x` (with the speed you chose).
+  - **Smooth slow motion** (0.25×, 0.5× and 0.75×): creates new frames in
+    between instead of repeating frames, so slow motion looks smooth. It
+    takes much longer to process.
+- **Crop Video:** drag the crop rectangle or its handles over the picture,
+  choose a shape (Free, 1:1, 16:9, 9:16, 4:3, 3:4) or type the width and
+  height in pixels. Saved as `<name>-cropped`.
+
+A finished file never replaces an existing one: ` (1)`, ` (2)` … is added to
+the name.
+
+<p>
+  <img src="docs/trim-en-light.png" width="49%" alt="The Trim Video window in English, light theme">
+  <img src="docs/trim-en-dark.png" width="49%" alt="The Trim Video window in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/snapshots-en-light.png" width="49%" alt="The Video Snapshots window in English, light theme">
+  <img src="docs/snapshots-en-dark.png" width="49%" alt="The Video Snapshots window in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/split-en-light.png" width="49%" alt="The Split Video window in English, light theme">
+  <img src="docs/split-en-dark.png" width="49%" alt="The Split Video window in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/speed-en-light.png" width="49%" alt="The Change Video Speed window with Smooth slow motion in English, light theme">
+  <img src="docs/speed-en-dark.png" width="49%" alt="The Change Video Speed window with Smooth slow motion in English, dark theme">
+</p>
+
+<p>
+  <img src="docs/crop-en-light.png" width="49%" alt="The Crop Video window in English, light theme">
+  <img src="docs/crop-en-dark.png" width="49%" alt="The Crop Video window in English, dark theme">
+</p>
 
 ## Install
 
