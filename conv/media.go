@@ -631,7 +631,7 @@ func runVideoPlan(ctx context.Context, path string, plan CompressPlan, progress 
 		return compressTwoPass(ctx, path, plan.TargetMB, progress)
 	}
 	mi := probe(path)
-	dst := uniquePath(path, "-compressed", ".mp4")
+	dst := outPath(ctx, path, "-compressed", ".mp4")
 	if plan.Strong {
 		// Strong: the long side capped at 1280 px too — the biggest win
 		// at low bitrates.
@@ -729,7 +729,7 @@ func compressTwoPass(ctx context.Context, path string, targetMB float64, progres
 	if TargetTooSmall(targetMB, mi.duration) {
 		return "", errors.New(tr("The target size is too small for this video", "الحجم المطلوب صغير جدًا لهذا الفيديو."))
 	}
-	dst := uniquePath(path, "-compressed", ".mp4")
+	dst := outPath(ctx, path, "-compressed", ".mp4")
 	tmp := tempFor(dst)
 	defer dropTemp(tmp)
 	// The two-pass logs (<passlog>-<stream>.log(.mbtree), ~35 MB) go to a
@@ -881,7 +881,7 @@ func runAudio(ctx context.Context, path, id string, progress func(float64)) (str
 		return ffmpeg(ctx, path, dst, append(vn, audioArgs(t, mi)...), mi.duration, progress)
 	case id == "a:compress":
 		e, a := sameFormatArgs(own, true)
-		dst := uniquePath(path, "-compressed", e)
+		dst := outPath(ctx, path, "-compressed", e)
 		return ffmpeg(ctx, path, dst, append(vn, a...), mi.duration, progress)
 	case id == "a:metadata":
 		dst := uniquePath(path, "-clean", ext)

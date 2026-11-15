@@ -87,7 +87,7 @@ func compressPDF(ctx context.Context, path string, progress func(float64)) (stri
 	if !HaveQPDF() {
 		return "", errors.New(tr("The PDF compressor isn't available", "محرك ضغط PDF غير متاح"))
 	}
-	dst := uniquePath(path, "-compressed", ".pdf")
+	dst := outPath(ctx, path, "-compressed", ".pdf")
 	tmp := tempFor(dst)
 	if progress != nil {
 		progress(0.05)

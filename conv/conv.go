@@ -196,7 +196,7 @@ func Run(ctx context.Context, path, id string, progress func(float64)) (string, 
 	}
 	switch id {
 	case "compress":
-		return compressP(path, progress)
+		return compressP(ctx, path, progress)
 	case "metadata":
 		return StripMetadata(path)
 	case "rotate":
@@ -481,9 +481,9 @@ func encodeGIF(w io.Writer, img image.Image) error {
 }
 
 // Compress writes a smaller copy in the same format (HEIC/BMP/TIFF -> JPG/PNG).
-func Compress(path string) (string, error) { return compressP(path, nil) }
+func Compress(path string) (string, error) { return compressP(context.Background(), path, nil) }
 
-func compressP(path string, prog func(float64)) (string, error) {
+func compressP(ctx context.Context, path string, prog func(float64)) (string, error) {
 	k := Kind(path)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -530,7 +530,7 @@ func compressP(path string, prog func(float64)) (string, error) {
 	if format == k && bb.Len() >= len(data) {
 		return "", errors.New(tr("The file is already compressed and can't get smaller", "الملف مضغوط بالفعل ولا يمكن تصغيره أكثر"))
 	}
-	dst := uniquePath(path, "-compressed", extFor(format))
+	dst := outPath(ctx, path, "-compressed", extFor(format))
 	return writeAtomic(dst, func(w io.Writer) error { _, err := w.Write(bb.Bytes()); return err })
 }
 

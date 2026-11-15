@@ -1038,6 +1038,15 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 			}
 			return "", nil
 		}
+		// Compressing two or more files: the copies go into a dated folder
+		// in each source folder ("Compressed 2026-11-15 05-30").
+		var outDirs map[string]string
+		if conv.IsCompress(id) && len(paths) >= 2 {
+			outDirs = conv.CompressFolders(paths, time.Now())
+			for _, d := range outDirs {
+				logf("compress folder: %s", d)
+			}
+		}
 		safeRun := func(p string, i, n int) (out string, err error) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -1054,7 +1063,11 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 			if err := ctx.Err(); err != nil {
 				return "", err
 			}
-			return conv.Run(ctx, p, id, func(f float64) {
+			rctx := ctx
+			if d := outDirs[filepath.Dir(p)]; d != "" {
+				rctx = conv.WithOutDir(ctx, d)
+			}
+			return conv.Run(rctx, p, id, func(f float64) {
 				report(math.Min((float64(i)+f)/float64(n), 0.99))
 			})
 		}
@@ -1103,6 +1116,11 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 			}
 			res.count++
 			notifyCreated(out)
+		}
+		for _, d := range outDirs {
+			if d != "" && os.Remove(d) == nil { // only an empty folder goes (all failed or cancelled)
+				logf("compress folder removed (empty): %s", d)
+			}
 		}
 		if len(errs) > 0 {
 			res.ok = false
