@@ -297,12 +297,8 @@ func (p *Panel) Render(now time.Time) *image.RGBA {
 
 	// pop-in: same curve as the wheel
 	t := now.Sub(p.openAt).Seconds()
-	a := math.Min(1, 0.5+t*21)
-	sc := 1 - 0.60*math.Exp(-t/0.035)
-	if t > 0.3 {
-		sc = 1
-	}
-	if a >= 0.999 && sc >= 0.9995 {
+	sc, a := PopOpen(t)
+	if PopOpenDone(t) {
 		return p.work
 	}
 	for i := range p.frame.Pix {

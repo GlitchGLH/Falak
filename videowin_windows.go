@@ -136,7 +136,7 @@ func (a *App) showVideoWindow(path, id, label string, cx, cy int32, scale float6
 	vwin.mu.Unlock()
 
 	refreshVideoWindow()
-	pShowWindow.Call(vwin.wnd, SW_SHOW)
+	popOpenLayered(vwin.wnd, vwin.last, vwin.x, vwin.y, func() { pShowWindow.Call(vwin.wnd, SW_SHOW) })
 	pSetForegroundWindow.Call(vwin.wnd)
 	vwin.shown = true
 	logf("video window %s shown at %d,%d (%dx%d) for %s", id, vwin.x, vwin.y, w, h, filepath.Base(path))

@@ -532,7 +532,7 @@ func (a *App) hidePanel() {
 // cancelPanel stops the job shown in the panel (the X button).
 func (a *App) cancelPanel() {
 	if a.donePanel {
-		a.hidePanel()
+		a.closePanelAnimated()
 		return
 	}
 	job := a.panelJob
@@ -648,7 +648,7 @@ func (a *App) tickPanel() {
 	a.panel.SetPointer(float64(cur.X-a.winX), float64(cur.Y-a.winY))
 	if a.donePanel {
 		if now.After(a.doneUntil) {
-			a.hidePanel()
+			a.closePanelAnimated()
 			return
 		}
 		a.panel.SetProgress(1)
@@ -1378,11 +1378,11 @@ func (a *App) handleResults() {
 			shown := a.panel != nil && r.job == a.panelJob
 			waiting := a.pending != nil && r.job == a.pending.job
 			if shown || waiting {
-				// done: the window disappears at once, no animation
+				// done: the window closes like the wheel
 				if waiting {
 					a.pending = nil
 				}
-				a.hidePanel()
+				a.closePanelAnimated()
 				a.setTrayTip(idleTip())
 				if !r.ok {
 					a.showFailure(r.errText)
@@ -1560,17 +1560,34 @@ func winrarFromRegistry() string {
 	return ""
 }
 
-// animatePanelClose plays the closing shrink-and-fade of the last frame
-// (ease-in, about 160 ms) before the window hides.
+// animatePanelClose plays the wheel's closing (ui.PopClose, 160 ms) on the
+// last frame before the window hides.
 func (a *App) animatePanelClose() {
 	img := a.lastPresented
 	if img == nil {
 		return
 	}
-	for i := 1; i <= 10; i++ {
-		e := float64(i) / 10
-		e *= e
-		a.present(ui.ZoomFrame(img, 1-0.08*e, 1-e))
+	src := image.NewRGBA(img.Rect) // present keeps the frame it shows
+	copy(src.Pix, img.Pix)
+	var buf *image.RGBA
+	for t0 := time.Now(); ; {
+		share := time.Since(t0).Seconds() / ui.PopCloseSecs
+		sc, al := ui.PopClose(math.Min(share, 1))
+		buf = ui.PopFrame(buf, src, sc, al)
+		a.present(buf)
 		pDwmFlush.Call()
+		if share >= 1 {
+			break
+		}
 	}
+}
+
+// closePanelAnimated hides the progress window with the wheel's closing.
+func (a *App) closePanelAnimated() {
+	if a.panel != nil && !a.closingPanel {
+		a.closingPanel = true
+		a.animatePanelClose()
+		a.closingPanel = false
+	}
+	a.hidePanel()
 }

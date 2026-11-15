@@ -89,7 +89,7 @@ func (a *App) showCompress(path, id, label string, cx, cy int32, scale float64) 
 	cdlgWin.dlg = ui.NewCompressDialog(scale, nil, a.fonts, darkMode(), arabic, labels, sizeText)
 	cdlgWin.dlg.OriginalBytes = float64(orig)
 	a.refreshCompress()
-	pShowWindow.Call(cdlgWin.wnd, SW_SHOW)
+	popOpenLayered(cdlgWin.wnd, cdlgWin.last, cdlgWin.x, cdlgWin.y, func() { pShowWindow.Call(cdlgWin.wnd, SW_SHOW) })
 	pSetForegroundWindow.Call(cdlgWin.wnd)
 	pSetTimer.Call(cdlgWin.wnd, caretTimer, caretBlinkMs, 0)
 	cdlgWin.shown = true

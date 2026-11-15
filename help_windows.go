@@ -59,7 +59,7 @@ func (a *App) showHelp() {
 	helpWin.x = (mi.RcWork.Left + mi.RcWork.Right - int32(w)) / 2
 	helpWin.y = (mi.RcWork.Top + mi.RcWork.Bottom - int32(h)) / 2
 	a.refreshHelp()
-	pShowWindow.Call(helpWin.wnd, SW_SHOW)
+	popOpenLayered(helpWin.wnd, helpWin.last, helpWin.x, helpWin.y, func() { pShowWindow.Call(helpWin.wnd, SW_SHOW) })
 	pSetForegroundWindow.Call(helpWin.wnd)
 	helpWin.shown = true
 	logf("help card shown at %d,%d (%dx%d)", helpWin.x, helpWin.y, w, h)

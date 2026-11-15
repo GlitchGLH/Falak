@@ -102,26 +102,9 @@ func (a *App) showMenu() {
 	}
 	trayMenu.m = &ui.Menu{Scale: float64(dpiX) / 96, Strong: a.fonts, Plain: trayMenu.plain, Hover: -1}
 	a.refreshMenu(true)
-	if lastMenuImg != nil {
-		// Apple-style entrance: fade in while sliding up about 8 px,
-		// ~180 ms, ease-out, no bounce. The layout and the final position
-		// are exactly refreshMenu's; only the presentation animates.
-		slide := int32(math.Round(8 * trayMenu.m.Scale))
-		presentLayeredA(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y+slide, 0)
-		pShowWindow.Call(trayMenu.wnd, SW_SHOW)
-		for t0 := time.Now(); ; {
-			e := time.Since(t0).Seconds() / 0.18
-			ee := 1 - math.Pow(1-math.Min(e, 1), 3)
-			presentLayeredA(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y+int32(math.Round(float64(slide)*(1-ee))), uint8(255*ee+0.5))
-			if e >= 1 {
-				break
-			}
-			pDwmFlush.Call()
-		}
-		presentLayered(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y)
-	} else {
-		pShowWindow.Call(trayMenu.wnd, SW_SHOW)
-	}
+	// the wheel's pop-open entrance; the layout and the final position are
+	// exactly refreshMenu's, only the presentation animates
+	popOpenLayered(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y, func() { pShowWindow.Call(trayMenu.wnd, SW_SHOW) })
 	pSetForegroundWindow.Call(trayMenu.wnd)
 	trayMenu.shown = true
 }
@@ -129,17 +112,8 @@ func (a *App) showMenu() {
 func hideMenu() {
 	if trayMenu.shown {
 		trayMenu.shown = false
-		if lastMenuImg != nil {
-			// quick fade out, about 120 ms (clicks are already ignored)
-			for t0 := time.Now(); ; {
-				e := time.Since(t0).Seconds() / 0.12
-				presentLayeredA(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y, uint8(255*(1-math.Min(e, 1))+0.5))
-				if e >= 1 {
-					break
-				}
-				pDwmFlush.Call()
-			}
-		}
+		// the wheel's closing (clicks are already ignored)
+		animateLayeredClose(trayMenu.wnd, lastMenuImg, trayMenu.x, trayMenu.y)
 		pShowWindow.Call(trayMenu.wnd, SW_HIDE)
 	}
 }
@@ -318,17 +292,49 @@ func presentLayeredA(hwnd uintptr, img *image.RGBA, x, y int32, alpha uint8) {
 	}
 }
 
-// animateLayeredClose plays the same shrink-and-fade for a layered card
-// window (the help card, the compress dialog) before it hides.
+// popOpenLayered shows a layered popup window (img at x, y) with the
+// wheel's pop-open entrance (ui.PopOpen). The first frame is put on the
+// window before show() makes it visible, so the full picture never flashes
+// first; show does what the window did before (show, with or without
+// activation), so the animation never takes focus by itself.
+func popOpenLayered(wnd uintptr, img *image.RGBA, x, y int32, show func()) {
+	if img == nil {
+		show()
+		return
+	}
+	sc, a := ui.PopOpen(0)
+	buf := ui.PopFrame(nil, img, sc, a)
+	presentLayered(wnd, buf, x, y)
+	show()
+	for t0 := time.Now(); ; {
+		pDwmFlush.Call()
+		t := time.Since(t0).Seconds()
+		if ui.PopOpenDone(t) {
+			break
+		}
+		sc, a := ui.PopOpen(t)
+		buf = ui.PopFrame(buf, img, sc, a)
+		presentLayered(wnd, buf, x, y)
+	}
+	presentLayered(wnd, img, x, y)
+}
+
+// animateLayeredClose plays the wheel's closing (ui.PopClose: fade out
+// while shrinking 8%, 160 ms) on a layered popup window before it hides.
 func animateLayeredClose(wnd uintptr, img *image.RGBA, x, y int32) {
 	if img == nil {
 		return
 	}
-	for i := 1; i <= 10; i++ {
-		e := float64(i) / 10
-		e *= e
-		presentLayered(wnd, ui.ZoomFrame(img, 1-0.08*e, 1-e), x, y)
+	var buf *image.RGBA
+	for t0 := time.Now(); ; {
+		share := time.Since(t0).Seconds() / ui.PopCloseSecs
+		sc, a := ui.PopClose(math.Min(share, 1))
+		buf = ui.PopFrame(buf, img, sc, a)
+		presentLayered(wnd, buf, x, y)
 		pDwmFlush.Call()
+		if share >= 1 {
+			break
+		}
 	}
 }
 
