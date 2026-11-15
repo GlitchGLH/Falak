@@ -972,6 +972,21 @@ func (a *App) onDrop(paths []string, pt POINT) uint32 {
 		a.showCompress(paths[0], id, label, cx, cy, scale)
 		return DROPEFFECT_COPY
 	}
+	// The video windows (Trim) open where the wheel was, for the first
+	// video of the selection.
+	if conv.OpensWindow(id) {
+		cx := a.winX + int32(a.wheel.CX)
+		cy := a.winY + int32(a.wheel.CY)
+		scale := a.wheel.Scale
+		label := a.wheel.Items[idx].Label
+		a.wheel.CloseFast(time.Now())
+		a.setClickThrough(true)
+		a.syncFlags()
+		pShowWindow.Call(a.overlay, SW_HIDE)
+		pDwmFlush.Call()
+		a.showVideoWindow(paths[0], id, label, cx, cy, scale)
+		return DROPEFFECT_COPY
+	}
 	a.jobSeq++
 	job := a.jobSeq
 	jobProgress.Store(job, -1.0)
@@ -1417,6 +1432,8 @@ func jobTitle(id, label string) string {
 		return T("Taking a snapshot", "جار التقاط صورة")
 	case "split":
 		return T("Splitting", "جار التقسيم")
+	case "trim":
+		return T("Trimming", "جار القص")
 	case "normalize":
 		return T("Normalizing the volume", "جار موازنة الصوت")
 	case "visualize":

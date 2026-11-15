@@ -272,12 +272,20 @@ func (a *App) compressStart() {
 // launchCompress starts the job exactly like a drop does: same progress
 // window, same results channel, same notifications.
 func (a *App) launchCompress(path string, plan conv.CompressPlan, label string, cx, cy int32, scale float64) {
+	a.launchVideoJob(path, "v:compress", label, cx, cy, scale, func(ctx context.Context, report func(float64)) (string, error) {
+		return conv.RunWithPlan(ctx, path, "v:compress", plan, report)
+	})
+}
+
+// launchVideoJob runs one video job of a dialog or video window (compress,
+// trim): FFmpeg first if it is missing, then run, in the progress window.
+func (a *App) launchVideoJob(path, id, label string, cx, cy int32, scale float64, run func(ctx context.Context, report func(float64)) (string, error)) {
 	a.jobSeq++
 	job := a.jobSeq
 	jobProgress.Store(job, -1.0)
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancels[job] = cancel
-	a.pending = &panelReq{job: job, title: jobTitle("v:compress", label), file: filepath.Base(path),
+	a.pending = &panelReq{job: job, title: jobTitle(id, label), file: filepath.Base(path),
 		cx: cx, cy: cy, scale: scale}
 	a.setClickThrough(true)
 	a.syncFlags()
@@ -291,7 +299,7 @@ func (a *App) launchCompress(path string, plan conv.CompressPlan, label string, 
 		out, err := func() (out string, err error) {
 			defer func() {
 				if r := recover(); r != nil {
-					logf("panic compressing %s: %v", path, r)
+					logf("panic in %s on %s: %v", id, path, r)
 					err = errors.New(T("Unexpected error while processing", "خطأ غير متوقع أثناء المعالجة"))
 				}
 			}()
@@ -313,7 +321,7 @@ func (a *App) launchCompress(path string, plan conv.CompressPlan, label string, 
 				return "", e
 			}
 			report(0)
-			return conv.RunWithPlan(ctx, path, "v:compress", plan, func(f float64) {
+			return run(ctx, func(f float64) {
 				report(math.Min(f, 0.99))
 			})
 		}()

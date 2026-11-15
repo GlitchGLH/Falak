@@ -36,6 +36,10 @@ func TestMedia(t *testing.T) {
 			if !it.Enabled {
 				continue
 			}
+			if OpensWindow(it.ID) { // tested with the window's own functions (TrimVideo)
+				t.Logf("%-9s %-11s -> opens its window", filepath.Base(src), it.ID)
+				continue
+			}
 			start := time.Now()
 			var last float64
 			out, err := Run(context.Background(), src, it.ID, func(p float64) { last = p })

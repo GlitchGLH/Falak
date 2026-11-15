@@ -488,6 +488,7 @@ func videoItems(path string) []Item { return formatItems(videoTargets, normalize
 func videoTools(path string) []Item {
 	return []Item{
 		{"v:compress", "COMPRESS", "compress", true},
+		{"v:trim", "TRIM", "trim", true},
 		{"v:metadata", "METADATA", "metadata", true},
 		{"v:mute", "MUTE", "mute", true},
 		{"v:speed", "SPEED 2×", "speed", true},
